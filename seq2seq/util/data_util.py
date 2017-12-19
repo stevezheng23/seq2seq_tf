@@ -158,6 +158,20 @@ def load_pretrained_embedding(embedding_file,
     else:
         raise FileNotFoundError("embedding file not found")
 
+def create_embedding_file(embedding_file,
+                          embedding_table):
+    """create embedding file based on embedding table"""
+    embedding_dir = os.path.dirname(embedding_file)
+    if not tf.gfile.Exists(embedding_dir):
+        tf.gfile.MakeDirs(embedding_dir)
+    
+    if not tf.gfile.Exists(embedding_file):
+        with codecs.getwriter("utf-8")(tf.gfile.GFile(embedding_file, "w")) as file:
+            for vocab in embedding_table.keys():
+                embed = embedding_table[vocab]
+                embed_str = " ".join(map(str, embed))
+                file.write("{0} {1}\n".format(vocab, embed_str))
+
 def load_vocab_table(vocab_file,
                      vocab_size,
                      vocab_lookup,
@@ -253,6 +267,7 @@ def create_vocab_table(text_file,
 
 def create_vocab_file(vocab_file,
                       vocab_table):
+    """create vocab file based on vocab table"""
     vocab_dir = os.path.dirname(vocab_file)
     if not tf.gfile.Exists(vocab_dir):
         tf.gfile.MakeDirs(vocab_dir)
@@ -282,6 +297,8 @@ def prepare_data(logger,
                  trg_vocab_file,
                  src_embedding_file,
                  trg_embedding_file,
+                 src_full_embedding_file,
+                 trg_full_embedding_file,
                  src_vocab_size,
                  trg_vocab_size,
                  src_embed_dim,
@@ -309,7 +326,11 @@ def prepare_data(logger,
             logger.log_print("# loading source embeddings from {0}".format(src_embedding_file))
             src_embedding = load_pretrained_embedding(src_embedding_file,
                 src_embed_dim, unk, sos, eos, pad)
-            logger.log_print("# source embeddings has {0} words".format(len(src_embedding)))
+        elif tf.gfile.Exists(src_full_embedding_file):
+            logger.log_print("# loading source embeddings from {0}".format(src_full_embedding_file))
+            src_embedding = load_pretrained_embedding(src_full_embedding_file,
+                src_embed_dim, unk, sos, eos, pad)
+        logger.log_print("# source embeddings has {0} words".format(len(src_embedding)))
     
     if tf.gfile.Exists(src_vocab_file):
         logger.log_print("# loading source vocab from {0}".format(src_vocab_file))
@@ -330,6 +351,9 @@ def prepare_data(logger,
     if src_embedding is not None:
         src_embedding = { k: src_embedding[k] for k in src_vocab_table if k in src_embedding }
         logger.log_print("# source embeddings has {0} words after filtering".format(len(src_embedding)))
+        if not tf.gfile.Exists(src_embedding_file):
+            logger.log_print("# creating source embeddings file {0}".format(src_embedding_file))
+            create_embedding_file(src_embedding_file, src_embedding)
     
     if share_vocab == True:
         logger.log_print("# sharing vocab between source and target data")
@@ -347,7 +371,11 @@ def prepare_data(logger,
             logger.log_print("# loading target embeddings from {0}".format(trg_embedding_file))
             trg_embedding = load_pretrained_embedding(trg_embedding_file,
                 trg_embed_dim, unk, sos, eos, pad)
-            logger.log_print("# target embeddings has {0} words".format(len(trg_embedding)))
+        elif tf.gfile.Exists(trg_full_embedding_file):
+            logger.log_print("# loading target embeddings from {0}".format(trg_full_embedding_file))
+            trg_embedding = load_pretrained_embedding(trg_full_embedding_file,
+                trg_embed_dim, unk, sos, eos, pad)
+        logger.log_print("# target embeddings has {0} words".format(len(trg_embedding)))
     
     if tf.gfile.Exists(trg_vocab_file):
         logger.log_print("# loading target vocab from {0}".format(trg_vocab_file))
@@ -368,6 +396,9 @@ def prepare_data(logger,
     if trg_embedding is not None:
         trg_embedding = { k: trg_embedding[k] for k in trg_vocab_table if k in trg_embedding }
         logger.log_print("# target embeddings has {0} words after filtering".format(len(trg_embedding)))
+        if not tf.gfile.Exists(trg_embedding_file):
+            logger.log_print("# creating target embeddings file {0}".format(trg_embedding_file))
+            create_embedding_file(trg_embedding_file, trg_embedding)
     
     return (src_input, trg_input, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
         src_vocab_index, trg_vocab_index, trg_vocab_inverted_index)

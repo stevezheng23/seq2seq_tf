@@ -23,6 +23,8 @@ def create_default_hyperparams():
         data_trg_vocab_file="",
         data_src_embedding_file="",
         data_trg_embedding_file="",
+        data_src_full_embedding_file="",
+        data_trg_full_embedding_file="",
         data_src_vocab_size=30000,
         data_trg_vocab_size=30000,
         data_src_max_length=50,
