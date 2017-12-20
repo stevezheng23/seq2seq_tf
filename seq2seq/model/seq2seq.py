@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from util.model_util import *
 
-__all__ = ["TrainResult", "EvaluateResult", "InferResult", "Seq2Seq"]
+__all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "Seq2Seq"]
 
 class TrainResult(collections.namedtuple("TrainResult", ("loss", "learning_rate", "global_step", "batch_size"))):
     pass
@@ -17,7 +17,7 @@ class EvaluateResult(collections.namedtuple("EvaluateResult", ("loss", "batch_si
 class InferResult(collections.namedtuple("InferResult", ("logits", "sample_id", "sample_word", "batch_size"))):
     pass
 
-class DecodeResult(collections.namedtuple("InferResult", ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size"))):
+class DecodeResult(collections.namedtuple("DecodeResult", ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size"))):
     pass
 
 class Seq2Seq(object):
