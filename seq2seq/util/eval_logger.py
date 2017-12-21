@@ -63,14 +63,14 @@ class EvalLogger(object):
     def check_intrinsic_eval(self):
         """check intrinsic evaluation result"""       
         log_line = "{0}={1}, sample size={2}".format(self.intrinsic_metric,
-            self.intrinsic_score, self.intrinsic_sample_size)
+            self.intrinsic_score, self.intrinsic_sample_size).encode('utf-8')
         self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
         
     def check_extrinsic_eval(self):
         """check extrinsic evaluation result"""
         log_line = "{0}={1}, sample size={2}".format(self.extrinsic_metric,
-            self.extrinsic_score, self.extrinsic_sample_size)
+            self.extrinsic_score, self.extrinsic_sample_size).encode('utf-8')
         self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
         
@@ -87,12 +87,12 @@ class EvalLogger(object):
             decode_input = self.sample_decode_input[i]
             decode_output = self.sample_decode_output[i]
             decode_reference = self.sample_decode_reference[i]
-            log_line = "sample {0} - input: {1}".format(i+1, decode_input)
+            log_line = "sample {0} - input: {1}".format(i+1, decode_input).encode('utf-8')
             self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)
-            log_line = "sample {0} - output: {1}".format(i+1, decode_output)
+            log_line = "sample {0} - output: {1}".format(i+1, decode_output).encode('utf-8')
             self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)
-            log_line = "sample {0} - reference: {1}".format(i+1, decode_reference)
+            log_line = "sample {0} - reference: {1}".format(i+1, decode_reference).encode('utf-8')
             self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)
