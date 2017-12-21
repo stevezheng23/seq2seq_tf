@@ -21,5 +21,5 @@ class DebugLogger(object):
         """log and print debugging message"""
         time_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         log_line = "{0}: {1}".format(time_stamp, message)
-        self.log_writer.write("{0}\n".format(log_line))
+        self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)

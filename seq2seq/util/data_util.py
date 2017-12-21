@@ -315,7 +315,7 @@ def prepare_data(logger,
         logger.log_print("# loading source input from {0}".format(src_file))
         src_input, src_input_size = load_input(src_file)
         logger.log_print("# source input has {0} lines".format(src_input_size))
-    if tf.gfile.Exists(src_file):
+    if tf.gfile.Exists(trg_file):
         logger.log_print("# loading target input from {0}".format(trg_file))
         trg_input, trg_input_size = load_input(trg_file)
         logger.log_print("# target input has {0} lines".format(trg_input_size))

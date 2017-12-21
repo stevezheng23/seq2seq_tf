@@ -63,14 +63,14 @@ class EvalLogger(object):
         """check intrinsic evaluation result"""       
         log_line = "{0}={1}, sample size={2}".format(self.intrinsic_metric,
             self.intrinsic_score, self.intrinsic_sample_size)
-        self.log_writer.write("{0}\n".format(log_line))
+        self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
         
     def check_extrinsic_eval(self):
         """check extrinsic evaluation result"""
         log_line = "{0}={1}, sample size={2}".format(self.extrinsic_metric,
             self.extrinsic_score, self.extrinsic_sample_size)
-        self.log_writer.write("{0}\n".format(log_line))
+        self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
         
     def check_decode_eval(self):
@@ -87,11 +87,11 @@ class EvalLogger(object):
             decode_output = self.sample_decode_output[i]
             decode_reference = self.sample_decode_reference[i]
             log_line = "sample {0} - input: {1}".format(i+1, decode_input)
-            self.log_writer.write("{0}\n".format(log_line))
+            self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)
             log_line = "sample {0} - output: {1}".format(i+1, decode_output)
-            self.log_writer.write("{0}\n".format(log_line))
+            self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)
             log_line = "sample {0} - reference: {1}".format(i+1, decode_reference)
-            self.log_writer.write("{0}\n".format(log_line))
+            self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)

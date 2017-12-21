@@ -57,7 +57,7 @@ class TrainLogger(object):
         
         log_line = "epoch={0}, step={1}, global step={2}, train time={3} avg. loss={4}, curr loss={5}".format(
             self.epoch, self.step_in_epoch, self.global_step, train_time_delta, avg_loss, curr_loss)
-        self.log_writer.write("{0}\n".format(log_line))
+        self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
         
         self.prev_check_loss = self.loss
