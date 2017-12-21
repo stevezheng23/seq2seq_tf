@@ -49,8 +49,9 @@ class TrainLogger(object):
         
         if self.sample_size <= 0:
             raise ValueError("current sample size is less than or equal to 0")
+        
         if sample_size_delta <= 0:
-            raise ValueError("current sample size is less than or equal to previous checked sample size")
+            return
         
         avg_loss = loss_delta/sample_size_delta
         curr_loss = self.loss/self.sample_size
