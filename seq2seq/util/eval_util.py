@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from external import bleu
-from external import rouge
+from external.bleu import *
+from external.rouge import *
 
 __all__ = ["evaluate", "evaluate_from_file"]
 

@@ -15,6 +15,7 @@ import numpy as np
 
 #pylint: disable=C0103
 
+__all__ = ["rouge"]
 
 def _get_ngrams(n, text):
   """Calcualtes n-grams.

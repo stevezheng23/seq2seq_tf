@@ -24,6 +24,7 @@ evaluation metrics for machine translation. COLING 2004.
 import collections
 import math
 
+__all__ = ["compute_bleu"]
 
 def _get_ngrams(segment, max_order):
   """Extracts all n-grams upto a given maximum order from an input segment.
