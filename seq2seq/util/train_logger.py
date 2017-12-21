@@ -1,3 +1,4 @@
+import codecs
 import os.path
 import time
 
@@ -25,7 +26,7 @@ class TrainLogger(object):
         if not tf.gfile.Exists(output_dir):
             tf.gfile.MakeDirs(output_dir)
         self.log_file = os.path.join(output_dir, "train_{0}.log".format(time.time()))
-        self.log_writer = tf.gfile.GFile(self.log_file, mode="a")
+        self.log_writer = codecs.getwriter("utf-8")(tf.gfile.GFile(self.log_file, mode="a"))
     
     def update(self,
                train_result,
