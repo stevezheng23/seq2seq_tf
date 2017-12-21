@@ -12,7 +12,7 @@ def _bleu(pred_data, ref_data):
     smooth = False
     (ref_data, pred_data) = zip(*[(ref, pred)
         for ref, pred in zip(ref_data, pred_data) if ref and pred])
-    score, _, _, _, _, _ = bleu.compute_bleu(ref_data, pred_data, max_order, smooth)
+    score, _, _, _, _, _ = compute_bleu(ref_data, pred_data, max_order, smooth)
     bleu_score = 100 * score
     return bleu_score
 
@@ -20,7 +20,7 @@ def _rouge(pred_data, ref_data):
     """ROUGE score for summarization task"""
     (ref_data, pred_data) = zip(*[(ref, pred)
         for ref, pred in zip(ref_data, pred_data) if ref and pred])
-    score_map = rouge.rouge(pred_data, ref_data)
+    score_map = rouge(pred_data, ref_data)
     rouge_score = 100 * score_map["rouge_l/f_score"]
     return rouge_score
 
