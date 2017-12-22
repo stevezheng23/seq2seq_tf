@@ -38,9 +38,10 @@ class EvalLogger(object):
         self.sample_decode_output = None
         self.sample_decode_reference = None
         
-        if not tf.gfile.Exists(output_dir):
-            tf.gfile.MakeDirs(output_dir)
-        self.log_file = os.path.join(output_dir, "eval_{0}.log".format(time.time()))
+        self.output_dir = output_dir
+        if not tf.gfile.Exists(self.output_dir):
+            tf.gfile.MakeDirs(self.output_dir)
+        self.log_file = os.path.join(self.output_dir, "eval_{0}.log".format(time.time()))
         self.log_writer = codecs.getwriter("utf-8")(tf.gfile.GFile(self.log_file, mode="a"))
     
     def update_intrinsic_eval(self,
@@ -55,7 +56,7 @@ class EvalLogger(object):
         """update evaluation logger based on extrinsic evaluation result"""
         self.extrinsic_metric = eval_result.metric
         self.extrinsic_score = eval_result.score
-        self.extrinsic_sample_output = sample_output
+        self.extrinsic_sample_output = eval_result.sample_output
         self.extrinsic_sample_size = eval_result.sample_size
     
     def update_decode_eval(self,
@@ -81,7 +82,7 @@ class EvalLogger(object):
     
     def check_extrinsic_eval_detail(self, eval_id):
         """check extrinsic evaluation detail result"""
-        eval_detail_file = os.path.join(output_dir, "eval_{0}.detail".format(eval_id))
+        eval_detail_file = os.path.join(self.output_dir, "eval_{0}.detail".format(eval_id))
         with codecs.getwriter("utf-8")(tf.gfile.GFile(self.log_file, mode="w")) as eval_detail_writer:
             if self.extrinsic_sample_output:
                 return

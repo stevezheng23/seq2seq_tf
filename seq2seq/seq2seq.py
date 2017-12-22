@@ -191,7 +191,7 @@ def train_extrinsic_eval(logger,
     
     score = evaluate(predict, trg_input, metric)
     extrinsic_eval_result = ExtrinsicEvalLog(metric=metric,
-        score=score, sample_output=sample_output, sample_size=sample_size)
+        score=score, sample_output=predict, sample_size=sample_size)
     logger.update_extrinsic_eval(extrinsic_eval_result)
     logger.check_extrinsic_eval()
     logger.check_extrinsic_eval_detail(eval_id)
