@@ -169,7 +169,8 @@ def train_extrinsic_eval(logger,
                          src_embedding,
                          trg_embedding,
                          batch_size,
-                         metric):
+                         metric,
+                         eval_id):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_input,
@@ -190,9 +191,10 @@ def train_extrinsic_eval(logger,
     
     score = evaluate(predict, trg_input, metric)
     extrinsic_eval_result = ExtrinsicEvalLog(metric=metric,
-        score=score, sample_size=sample_size)
+        score=score, sample_output=sample_output, sample_size=sample_size)
     logger.update_extrinsic_eval(extrinsic_eval_result)
     logger.check_extrinsic_eval()
+    logger.check_extrinsic_eval_detail(eval_id)
 
 def train_decode_eval(logger,
                       sess,
@@ -283,7 +285,8 @@ def train(logger,
                 train_extrinsic_eval(eval_logger, infer_sess,
                     infer_model, infer_src_input, infer_trg_input,
                     infer_src_embedding, infer_trg_embedding,
-                    hyperparams.train_eval_batch_size, hyperparams.train_eval_metric)
+                    hyperparams.train_eval_batch_size,
+                    hyperparams.train_eval_metric, global_step)
                 train_decode_eval(eval_logger, infer_sess,
                     infer_model, infer_src_input, infer_trg_input,
                     infer_src_embedding, infer_trg_embedding,

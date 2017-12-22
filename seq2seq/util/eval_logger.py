@@ -11,7 +11,7 @@ __all__ = ["IntrinsicEvalLog", "ExtrinsicEvalLog", "DecodeEvalLog", "EvalLogger"
 class IntrinsicEvalLog(collections.namedtuple("IntrinsicEvalLog", ("metric", "score", "sample_size"))):
     pass
 
-class ExtrinsicEvalLog(collections.namedtuple("ExtrinsicEvalLog", ("metric", "score", "sample_size"))):
+class ExtrinsicEvalLog(collections.namedtuple("ExtrinsicEvalLog", ("metric", "score", "sample_output", "sample_size"))):
     pass
 
 class DecodeEvalLog(collections.namedtuple("DecodeEvalLog", ("sample_input", "sample_output", "sample_reference"))):
@@ -30,9 +30,13 @@ class EvalLogger(object):
         """extrinsic evaluation result"""
         self.extrinsic_metric = 0.0
         self.extrinsic_score = 0.0
+        self.extrinsic_sample_output = None
         self.extrinsic_sample_size = 0
         
         """decoding evaluation result"""
+        self.sample_decode_input = None
+        self.sample_decode_output = None
+        self.sample_decode_reference = None
         
         if not tf.gfile.Exists(output_dir):
             tf.gfile.MakeDirs(output_dir)
@@ -51,6 +55,7 @@ class EvalLogger(object):
         """update evaluation logger based on extrinsic evaluation result"""
         self.extrinsic_metric = eval_result.metric
         self.extrinsic_score = eval_result.score
+        self.extrinsic_sample_output = sample_output
         self.extrinsic_sample_size = eval_result.sample_size
     
     def update_decode_eval(self,
@@ -66,14 +71,23 @@ class EvalLogger(object):
             self.intrinsic_score, self.intrinsic_sample_size).encode('utf-8')
         self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
-        
+    
     def check_extrinsic_eval(self):
         """check extrinsic evaluation result"""
         log_line = "{0}={1}, sample size={2}".format(self.extrinsic_metric,
             self.extrinsic_score, self.extrinsic_sample_size).encode('utf-8')
         self.log_writer.write("{0}\r\n".format(log_line))
         print(log_line)
-        
+    
+    def check_extrinsic_eval_detail(self, eval_id):
+        """check extrinsic evaluation detail result"""
+        eval_detail_file = os.path.join(output_dir, "eval_{0}.detail".format(eval_id))
+        with codecs.getwriter("utf-8")(tf.gfile.GFile(self.log_file, mode="w")) as eval_detail_writer:
+            if self.extrinsic_sample_output:
+                return
+            for sample_output in self.extrinsic_sample_output:
+                eval_detail_writer.write("{0}\r\n".format(sample_output))
+    
     def check_decode_eval(self):
         """check decoding evaluation result"""
         input_size = len(self.sample_decode_input)
