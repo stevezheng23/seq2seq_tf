@@ -71,8 +71,9 @@ def _word_accuracy(pred_data, ref_data):
 
 def evaluate(pred_data, ref_data, metric):
     """compute evaluation score based on selected metric"""
-    (pred_data, ref_data) = zip(*[(pred, ref)
-        for pred, ref in zip(pred_data, ref_data) if pred and ref ])
+    pred_and_ref = [(pred, ref) for pred, ref in zip(pred_data, ref_data) if pred and ref]
+    pred_data = [pred for (pred, ref) in pred_and_ref]
+    ref_data = [ref.encode("utf-8") for (pred, ref) in pred_and_ref]
     
     if metric == "bleu":
         eval_score = _bleu(pred_data, ref_data)
