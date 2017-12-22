@@ -10,16 +10,13 @@ def _bleu(pred_data, ref_data):
     """BLEU score for translation task"""
     max_order = 4
     smooth = False
-    (ref_data, pred_data) = zip(*[(ref, pred)
-        for ref, pred in zip(ref_data, pred_data) if ref and pred])
-    score, _, _, _, _, _ = compute_bleu(ref_data, pred_data, max_order, smooth)
+    ref_list_data = [[ref] for ref in ref_data]
+    score, _, _, _, _, _ = compute_bleu(ref_list_data, pred_data, max_order, smooth)
     bleu_score = 100 * score
     return bleu_score
 
 def _rouge(pred_data, ref_data):
     """ROUGE score for summarization task"""
-    (ref_data, pred_data) = zip(*[(ref, pred)
-        for ref, pred in zip(ref_data, pred_data) if ref and pred])
     score_map = rouge(pred_data, ref_data)
     rouge_score = 100 * score_map["rouge_l/f_score"]
     return rouge_score
@@ -74,6 +71,9 @@ def _word_accuracy(pred_data, ref_data):
 
 def evaluate(pred_data, ref_data, metric):
     """compute evaluation score based on selected metric"""
+    (pred_data, ref_data) = zip(*[(pred, ref)
+        for pred, ref in zip(pred_data, ref_data) if pred and ref ])
+    
     if metric == "bleu":
         eval_score = _bleu(pred_data, ref_data)
     elif metric == "rouge":
