@@ -21,7 +21,7 @@ class DecodeResult(collections.namedtuple("DecodeResult", ("logits", "sample_id"
     pass
 
 class Seq2Seq(object):
-    """sequence-to-sequence base model"""
+    """sequence-to-sequence vanilla model"""
     def __init__(self,
                  logger,
                  hyperparams,
@@ -111,6 +111,7 @@ class Seq2Seq(object):
                              forget_bias,
                              residual_connect,
                              drop_out):
+        """create encoder cell"""
         return create_rnn_cell(num_layer, unit_dim, unit_type, activation,
             forget_bias, residual_connect, drop_out)
     
@@ -154,6 +155,32 @@ class Seq2Seq(object):
             
             return outputs, final_state, embedding_placeholder
     
+    def _convert_encoder_state(self,
+                               state):
+        """convert encoder state"""
+        decoding = self.hyperparams.model_decoder_decoding
+        beam_size = self.hyperparams.model_decoder_beam_size
+        
+        if self.mode == "infer":
+            if decoding == "beam_search" and beam_size > 0:
+                state = tf.contrib.seq2seq.tile_batch(state, multiplier=beam_size)
+        
+        return state
+    
+    def _convert_encoder_outputs(self,
+                                 outputs,
+                                 output_length):
+        """convert encoder outputs"""
+        decoding = self.hyperparams.model_decoder_decoding
+        beam_size = self.hyperparams.model_decoder_beam_size
+        
+        if self.mode == "infer":
+            if decoding == "beam_search" and beam_size > 0:
+                outputs = tf.contrib.seq2seq.tile_batch(outputs, multiplier=beam_size)
+                output_length = tf.contrib.seq2seq.tile_batch(output_length, multiplier=beam_size)
+        
+        return outputs, output_length
+    
     def _create_decoder_cell(self,
                              num_layer,
                              unit_dim,
@@ -165,11 +192,20 @@ class Seq2Seq(object):
         return create_rnn_cell(num_layer, unit_dim, unit_type, activation, 
             forget_bias, residual_connect, drop_out)
     
+    def _convert_decoder_cell(self,
+                              cell,
+                              unit_dim,
+                              encoder_outputs,
+                              encoder_output_length):
+        """convert decoder cell"""
+        return cell
+    
     def _build_decoder(self,
                        inputs,
                        init_state,
                        input_length,
-                       max_len):
+                       encoder_outputs,
+                       encoder_output_length):
         """build decoder for seq2seq model"""
         embed_dim = self.hyperparams.model_decoder_embed_dim
         encoder_type = self.hyperparams.model_decoder_type
@@ -195,20 +231,22 @@ class Seq2Seq(object):
             
             """create hidden layer for decoder"""
             self.logger.log_print("# create hidden layer for decoder")
-            cell = self._create_decoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
-                forget_bias, residual_connect, drop_out)
+            cell = self._create_decoder_cell(num_layer, unit_dim, unit_type,
+                hidden_activation, forget_bias, residual_connect, drop_out)
+            cell = self._convert_decoder_cell(cell, unit_dim, encoder_outputs, encoder_output_length)
             
             """create projection layer for decoder"""
             self.logger.log_print("# create projection layer for decoder")
             projector = tf.layers.Dense(units=self.trg_vocab_size, activation=projection_activation)
             
             if self.mode == "infer":
+                max_len = tf.cast(tf.round(tf.cast(tf.reduce_max(encoder_output_length), tf.float32) *
+                    self.hyperparams.model_decoder_max_len_factor), tf.int32)
                 start_tokens = tf.fill([self.batch_size], trg_sos_id)
                 end_token = trg_eos_id
                 if decoding == "beam_search" and beam_size > 0:
-                    tiled_init_state = tf.contrib.seq2seq.tile_batch(init_state, multiplier=beam_size)
                     decoder = tf.contrib.seq2seq.BeamSearchDecoder(cell=cell, embedding=embedding,
-                        start_tokens=start_tokens, end_token=end_token, initial_state=tiled_init_state,
+                        start_tokens=start_tokens, end_token=end_token, initial_state=init_state,
                         beam_width=beam_size, output_layer=projector, length_penalty_weight=len_penalty_factor)
                     outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations=max_len)
                     sample_id = outputs.predicted_ids
@@ -240,19 +278,18 @@ class Seq2Seq(object):
         """build seq2seq model graph"""       
         """encoder: encode source inputs to get encoder outputs"""
         self.logger.log_print("# build encoder for seq2seq model")
-        _, encoder_final_state, encoder_embedding_placeholder = self._build_encoder(src_inputs, src_input_length)
-        decoder_init_state = encoder_final_state
+        (encoder_outputs, encoder_final_state,
+            encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
+        decoder_init_state = self._convert_encoder_state(encoder_final_state)
+        encoder_outputs, encoder_output_length = self._convert_encoder_outputs(encoder_outputs, src_input_length)
         
         """decoder: decode target outputs based target inputs and encoder outputs"""
         self.logger.log_print("# build decoder for seq2seq model")
-        decoder_max_len = tf.cast(tf.round(tf.cast(tf.reduce_max(src_input_length), tf.float32) *
-            self.hyperparams.model_decoder_max_len_factor), tf.int32)
         (logits, sample_id, decoder_final_state,
             decoder_embedding_placeholder) = self._build_decoder(trg_inputs,
-            decoder_init_state, trg_input_length, decoder_max_len)
-        final_state = decoder_final_state
+            decoder_init_state, trg_input_length, encoder_outputs, encoder_output_length)
         
-        return logits, sample_id, final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
+        return logits, sample_id, decoder_final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
     
     def _compute_loss(self,
                       logits,

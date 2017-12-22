@@ -84,7 +84,7 @@ class EvalLogger(object):
         """check extrinsic evaluation detail result"""
         eval_detail_file = os.path.join(self.output_dir, "eval_{0}.detail".format(eval_id))
         with codecs.getwriter("utf-8")(tf.gfile.GFile(self.log_file, mode="w")) as eval_detail_writer:
-            if self.extrinsic_sample_output:
+            if self.extrinsic_sample_output is None:
                 return
             for sample_output in self.extrinsic_sample_output:
                 eval_detail_writer.write("{0}\r\n".format(sample_output))

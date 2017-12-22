@@ -185,10 +185,6 @@ def train_extrinsic_eval(logger,
         except  tf.errors.OutOfRangeError:
             break
     
-    sample_size = len(predict)
-    if sample_size == 0:
-        return
-    
     score = evaluate(predict, trg_input, metric)
     extrinsic_eval_result = ExtrinsicEvalLog(metric=metric,
         score=score, sample_output=predict, sample_size=sample_size)

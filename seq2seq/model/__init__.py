@@ -1,1 +1,1 @@
-__all__ = ["seq2seq"]
+__all__ = ["seq2seq", "seq2seq_attention"]
