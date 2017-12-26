@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from seq2seq import *
+from model.seq2seq import *
 
 __all__ = ["Seq2SeqAttention"]
 
