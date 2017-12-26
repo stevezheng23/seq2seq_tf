@@ -115,6 +115,44 @@ class Seq2Seq(object):
         return create_rnn_cell(num_layer, unit_dim, unit_type, activation,
             forget_bias, residual_connect, drop_out)
     
+    def _convert_encoder_state(self,
+                               state):
+        """convert encoder state"""
+        encoder_type = self.hyperparams.model_encoder_type
+        num_layer = self.hyperparams.model_encoder_num_layer
+        if encoder_type == "bi":
+            if num_layer > 1:
+                state_list = []
+                for i in range(num_layer):
+                    state_list.append(state[0][i])
+                    state_list.append(state[1][i])
+                state = tuple(state_list)
+        
+        decoding = self.hyperparams.model_decoder_decoding
+        beam_size = self.hyperparams.model_decoder_beam_size
+        if self.mode == "infer":
+            if decoding == "beam_search" and beam_size > 0:
+                state = tf.contrib.seq2seq.tile_batch(state, multiplier=beam_size)
+        
+        return state
+    
+    def _convert_encoder_outputs(self,
+                                 outputs,
+                                 output_length):
+        """convert encoder outputs"""
+        encoder_type = self.hyperparams.model_encoder_type
+        if encoder_type == "bi":
+            outputs = tf.concat(outputs, -1)
+        
+        decoding = self.hyperparams.model_decoder_decoding
+        beam_size = self.hyperparams.model_decoder_beam_size
+        if self.mode == "infer":
+            if decoding == "beam_search" and beam_size > 0:
+                outputs = tf.contrib.seq2seq.tile_batch(outputs, multiplier=beam_size)
+                output_length = tf.contrib.seq2seq.tile_batch(output_length, multiplier=beam_size)
+        
+        return outputs, output_length
+    
     def _build_encoder(self,
                        inputs,
                        input_length):
@@ -153,34 +191,11 @@ class Seq2Seq(object):
             else:
                 raise ValueError("unsupported encoder type {0}".format(encoder_type))
             
-            return outputs, final_state, embedding_placeholder
-    
-    def _convert_encoder_state(self,
-                               state):
-        """convert encoder state"""
-        decoding = self.hyperparams.model_decoder_decoding
-        beam_size = self.hyperparams.model_decoder_beam_size
+            final_state = self._convert_encoder_state(final_state)
+            outputs, output_length = self._convert_encoder_outputs(outputs, input_length)
+            
+            return outputs, final_state, output_length, embedding_placeholder
         
-        if self.mode == "infer":
-            if decoding == "beam_search" and beam_size > 0:
-                state = tf.contrib.seq2seq.tile_batch(state, multiplier=beam_size)
-        
-        return state
-    
-    def _convert_encoder_outputs(self,
-                                 outputs,
-                                 output_length):
-        """convert encoder outputs"""
-        decoding = self.hyperparams.model_decoder_decoding
-        beam_size = self.hyperparams.model_decoder_beam_size
-        
-        if self.mode == "infer":
-            if decoding == "beam_search" and beam_size > 0:
-                outputs = tf.contrib.seq2seq.tile_batch(outputs, multiplier=beam_size)
-                output_length = tf.contrib.seq2seq.tile_batch(output_length, multiplier=beam_size)
-        
-        return outputs, output_length
-    
     def _create_decoder_cell(self,
                              num_layer,
                              unit_dim,
@@ -189,6 +204,7 @@ class Seq2Seq(object):
                              forget_bias,
                              residual_connect,
                              drop_out):
+        """create decoder cell"""
         return create_rnn_cell(num_layer, unit_dim, unit_type, activation, 
             forget_bias, residual_connect, drop_out)
     
@@ -199,6 +215,12 @@ class Seq2Seq(object):
                               encoder_output_length):
         """convert decoder cell"""
         return cell
+    
+    def _convert_decoder_state(self,
+                               state,
+                               cell):
+        """convert decoder state"""
+        return state
     
     def _build_decoder(self,
                        inputs,
@@ -234,6 +256,7 @@ class Seq2Seq(object):
             cell = self._create_decoder_cell(num_layer, unit_dim, unit_type,
                 hidden_activation, forget_bias, residual_connect, drop_out)
             cell = self._convert_decoder_cell(cell, unit_dim, encoder_outputs, encoder_output_length)
+            init_state = self._convert_decoder_state(init_state, cell)
             
             """create projection layer for decoder"""
             self.logger.log_print("# create projection layer for decoder")
@@ -278,16 +301,14 @@ class Seq2Seq(object):
         """build seq2seq model graph"""       
         """encoder: encode source inputs to get encoder outputs"""
         self.logger.log_print("# build encoder for seq2seq model")
-        (encoder_outputs, encoder_final_state,
+        (encoder_outputs, encoder_final_state, encoder_output_length,
             encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
-        decoder_init_state = self._convert_encoder_state(encoder_final_state)
-        encoder_outputs, encoder_output_length = self._convert_encoder_outputs(encoder_outputs, src_input_length)
         
         """decoder: decode target outputs based target inputs and encoder outputs"""
         self.logger.log_print("# build decoder for seq2seq model")
         (logits, sample_id, decoder_final_state,
             decoder_embedding_placeholder) = self._build_decoder(trg_inputs,
-            decoder_init_state, trg_input_length, encoder_outputs, encoder_output_length)
+            encoder_final_state, trg_input_length, encoder_outputs, encoder_output_length)
         
         return logits, sample_id, decoder_final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
     

@@ -17,7 +17,7 @@ class Seq2SeqAttention(Seq2Seq):
                  trg_vocab_inverted_index=None,
                  mode="train",
                  pretrained_embedding=False):
-        """sequence-to-sequence attention model"""
+        """sequence-to-sequence model with attention"""
         super(Seq2SeqAttention, self).__init__(logger=logger,
             hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=trg_vocab_size,
@@ -32,7 +32,7 @@ class Seq2SeqAttention(Seq2Seq):
                               unit_dim,
                               encoder_outputs,
                               encoder_output_length):
-        """convert decoder cell to support attention"""
+        """convert decoder cell"""
         attention_mechanism = self._create_attention_mechanism(unit_dim,
             encoder_outputs, encoder_output_length,
             self.hyperparams.model_decoder_attention_type)
@@ -42,7 +42,24 @@ class Seq2SeqAttention(Seq2Seq):
         
         return cell
     
-    def _create_attention_mechanism(unit_dim,
+    def _convert_decoder_state(self,
+                               state,
+                               cell):
+        """convert decoder state"""
+        batch_size = self.batch_size
+        decoding = self.hyperparams.model_decoder_decoding
+        beam_size = self.hyperparams.model_decoder_beam_size
+        if self.mode == "infer":
+            if decoding == "beam_search" and beam_size > 0:
+                batch_size = self.batch_size * beam_size
+        
+        state = cell.zero_state(batch_size=batch_size,
+            dtype=tf.float32).clone(cell_state=state)
+        
+        return state
+    
+    def _create_attention_mechanism(self,
+                                    unit_dim,
                                     attention_memory,
                                     attention_memory_length,
                                     attention_type):

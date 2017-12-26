@@ -5,13 +5,14 @@ import numpy as np
 import tensorflow as tf
 
 from model.seq2seq import *
+from model.seq2seq_attention import *
 from util.data_util import *
 from util.model_util import *
 from util.eval_util import *
 from util.eval_logger import *
 
 __all__ = ["TrainModel", "EvalModel", "InferModel", "create_train_model", "create_eval_model", "create_infer_model",
-           "train_intrinsic_eval", "train_extrinsic_eval", "train_decode_eval", "init_model", "load_model"]
+           "get_model_creator", "train_intrinsic_eval", "train_extrinsic_eval", "train_decode_eval", "init_model", "load_model"]
 
 class TrainModel(collections.namedtuple("TrainModel",
     ("graph", "model", "data_pipeline", "src_embedding", "trg_embedding"))):
@@ -47,12 +48,10 @@ def create_train_model(logger,
             hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad,
             hyperparams.train_batch_size, hyperparams.train_random_seed)
         
-        if hyperparams.model_type == "vanilla":
-            model = Seq2Seq(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
-                src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
-                "train", hyperparams.model_pretrained_embedding)
-        else:
-            raise ValueError("can not create model with unsupported model type {0}".format(hyperparams.model_type))
+        model_creator = get_model_creator(hyperparams.model_type)
+        model = model_creator(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
+            src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
+            "train", hyperparams.model_pretrained_embedding)
         
         return TrainModel(graph=graph, model=model, data_pipeline=data_pipeline,
             src_embedding=src_embedding, trg_embedding=trg_embedding)
@@ -79,12 +78,10 @@ def create_eval_model(logger,
             hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad,
             hyperparams.train_eval_batch_size, hyperparams.train_random_seed)
         
-        if hyperparams.model_type == "vanilla":
-            model = Seq2Seq(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
-                src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
-                "eval", hyperparams.model_pretrained_embedding)
-        else:
-            raise ValueError("can not create model with unsupported model type {0}".format(hyperparams.model_type))
+        model_creator = get_model_creator(hyperparams.model_type)
+        model = model_creator(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
+            src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
+            "eval", hyperparams.model_pretrained_embedding)
         
         return EvalModel(graph=graph, model=model, data_pipeline=data_pipeline,
             src_embedding=src_embedding, trg_embedding=trg_embedding)
@@ -109,16 +106,24 @@ def create_infer_model(logger,
         data_pipeline = create_infer_pipeline(src_vocab_index,
             hyperparams.data_src_max_length, hyperparams.data_src_reverse, hyperparams.data_pad)
         
-        if hyperparams.model_type == "vanilla":
-            model = Seq2Seq(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
-                src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
-                "infer", hyperparams.model_pretrained_embedding)
-        else:
-            raise ValueError("can not create model with unsupported model type {0}".format(hyperparams.model_type))
+        model_creator = get_model_creator(hyperparams.model_type)
+        model = model_creator(logger, hyperparams, data_pipeline, src_vocab_size, trg_vocab_size,
+            src_vocab_index, trg_vocab_index, trg_vocab_inverted_index,
+            "infer", hyperparams.model_pretrained_embedding)
         
         return InferModel(graph=graph, model=model,
             data_pipeline=data_pipeline, src_input=src_input, trg_input=trg_input,
             src_embedding=src_embedding, trg_embedding=trg_embedding)
+
+def get_model_creator(model_type):
+    if model_type == "vanilla":
+        model_creator = Seq2Seq
+    elif model_type == "attention":
+        model_creator = Seq2SeqAttention
+    else:
+        raise ValueError("can not create model with unsupported model type {0}".format(hyperparams.model_type))
+    
+    return model_creator
 
 def train_intrinsic_eval(logger,
                          sess,
