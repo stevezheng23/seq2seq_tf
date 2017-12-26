@@ -6,7 +6,8 @@ import numpy as np
 import tensorflow as tf
 
 __all__ = ["DataPipeline", "create_data_pipeline", "create_infer_pipeline",
-           "load_pretrained_embedding", "create_vocab_table", "create_vocab_file", "load_input", "prepare_data"]
+           "load_pretrained_embedding", "create_embedding_file", "convert_embedding",
+           "load_vocab_table", "create_vocab_table", "create_vocab_file", "load_input", "prepare_data"]
 
 class DataPipeline(collections.namedtuple("DataPipeline",
     ("initializer", "source_input", "target_input", "target_output",
@@ -171,6 +172,14 @@ def create_embedding_file(embedding_file,
                 embed = embedding_table[vocab]
                 embed_str = " ".join(map(str, embed))
                 file.write("{0} {1}\n".format(vocab, embed_str))
+
+def convert_embedding(embedding_lookup):
+    if embedding_lookup is not None:
+        embedding = [v for k,v in embedding_lookup.items()]
+    else:
+        embedding = None
+    
+    return embedding
 
 def load_vocab_table(vocab_file,
                      vocab_size,
@@ -354,6 +363,7 @@ def prepare_data(logger,
         if not tf.gfile.Exists(src_embedding_file):
             logger.log_print("# creating source embeddings file {0}".format(src_embedding_file))
             create_embedding_file(src_embedding_file, src_embedding)
+        src_embedding = convert_embedding(src_embedding)
     
     if share_vocab == True:
         logger.log_print("# sharing vocab between source and target data")
@@ -399,6 +409,7 @@ def prepare_data(logger,
         if not tf.gfile.Exists(trg_embedding_file):
             logger.log_print("# creating target embeddings file {0}".format(trg_embedding_file))
             create_embedding_file(trg_embedding_file, trg_embedding)
+        trg_embedding = convert_embedding(trg_embedding)
     
     return (src_input, trg_input, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
         src_vocab_index, trg_vocab_index, trg_vocab_inverted_index)

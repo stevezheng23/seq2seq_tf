@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-__all__ = ["convert_decoding", "convert_embedding", "create_embedding", "create_rnn_cell", "create_rnn_single_cell"]
+__all__ = ["convert_decoding", "create_embedding", "create_rnn_cell", "create_rnn_single_cell"]
 
 def convert_decoding(decoding_list, eos):
     eos = eos.encode("utf-8")
@@ -10,14 +10,6 @@ def convert_decoding(decoding_list, eos):
     decoding = b" ".join(decoding_list)
     
     return decoding
-
-def convert_embedding(embedding_lookup):
-    if embedding_lookup is not None:
-        embedding = [v for k,v in embedding_lookup.items()]
-    else:
-        embedding = None
-    
-    return embedding
 
 def create_embedding(vocab_size,
                      embedding_dim,
