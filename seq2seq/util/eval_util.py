@@ -75,6 +75,9 @@ def evaluate(pred_data, ref_data, metric):
     pred_data = [pred for (pred, ref) in pred_and_ref]
     ref_data = [ref.encode("utf-8") for (pred, ref) in pred_and_ref]
     
+    if len(pred_data) == 0 or len(ref_data) == 0:
+        return 0.0
+    
     if metric == "bleu":
         eval_score = _bleu(pred_data, ref_data)
     elif metric == "rouge":
