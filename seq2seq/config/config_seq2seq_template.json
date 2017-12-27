@@ -13,7 +13,7 @@
     "data_trg_vocab_size": 30000,
     "data_src_max_length": 50,
     "data_trg_max_length": 50,
-    "data_src_reverse": true,
+    "data_src_reverse": false,
     "data_share_vocab": false,
     "data_log_output_dir": "output/log",
     "train_random_seed": 123,

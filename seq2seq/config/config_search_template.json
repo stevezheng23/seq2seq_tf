@@ -38,8 +38,6 @@
         "model_encoder_num_layer": {
             "stype": "lookup",
             "key": "num_layer",
-            "scale": 2.0,
-            "shift": 0.0,
             "dtype": "int"
         },
         "model_encoder_unit_dim": {
@@ -70,6 +68,8 @@
         "model_decoder_num_layer": {
             "stype": "lookup",
             "key": "num_layer",
+            "scale": 2.0,
+            "shift": 0.0,
             "dtype": "int"
         },
         "model_decoder_unit_dim": {

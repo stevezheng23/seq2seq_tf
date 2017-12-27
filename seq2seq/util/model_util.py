@@ -57,7 +57,7 @@ def create_rnn_single_cell(unit_dim,
         single_cell = tf.contrib.rnn.LSTMCell(num_units=unit_dim,
             use_peepholes=True, activation=activation_function, forget_bias=forget_bias)
     elif unit_type == "layer_norm_lstm":
-        single_cell = tf.contrib.rnn.LayerNormBasicLSTM(num_units=unit_dim,
+        single_cell = tf.contrib.rnn.LayerNormBasicLSTMCell(num_units=unit_dim,
             layer_norm=True, activation=activation_function, forget_bias=forget_bias)
     elif unit_type == "gru":
         single_cell = tf.contrib.rnn.GRUCell(num_units=unit_dim, activation=activation_function)
