@@ -11,6 +11,10 @@ from util.train_logger import *
 from util.eval_logger import *
 from util.debug_logger import *
 
+def add_arguments(parser):
+    parser.add_argument("--mode", help="mode to run", required=True)
+    parser.add_argument("--config", help="path to json config", required=True)
+
 def train(logger,
           hyperparams):
     logger.log_print("##### create train model #####")
