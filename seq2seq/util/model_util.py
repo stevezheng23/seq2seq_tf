@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-__all__ = ["convert_decoding", "create_embedding", "create_rnn_cell", "create_rnn_single_cell"]
+__all__ = ["convert_decoding", "create_embedding", "create_activation_function", "create_rnn_cell", "create_rnn_single_cell"]
 
 def convert_decoding(decoding_list, eos):
     eos = eos.encode("utf-8")
@@ -27,13 +27,7 @@ def create_embedding(vocab_size,
     
     return embedding, embedding_placeholder
 
-def create_rnn_single_cell(unit_dim,
-                           unit_type,
-                           activation,
-                           forget_bias,
-                           residual_connect,
-                           drop_out):
-    """create single rnn cell"""
+def create_activation_function(activation):
     if activation == "tanh":
         activation_function = tf.nn.tanh
     elif activation == "relu":
@@ -44,6 +38,17 @@ def create_rnn_single_cell(unit_dim,
         activation_function = tf.nn.sigmoid
     else:
         activation_function = None
+    
+    return activation_function
+
+def create_rnn_single_cell(unit_dim,
+                           unit_type,
+                           activation,
+                           forget_bias,
+                           residual_connect,
+                           drop_out):
+    """create single rnn cell"""
+    activation_function = create_activation_function(activation)
     
     if unit_type == "lstm":
         single_cell = tf.contrib.rnn.BasicLSTMCell(num_units=unit_dim,

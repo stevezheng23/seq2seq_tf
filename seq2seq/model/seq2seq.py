@@ -235,7 +235,7 @@ class Seq2Seq(object):
         unit_dim = self.hyperparams.model_decoder_unit_dim
         unit_type = self.hyperparams.model_decoder_unit_type
         hidden_activation = self.hyperparams.model_decoder_hidden_activation
-        projection_activation = self.hyperparams.model_decoder_projection_activation
+        projection_activation = create_activation_function(self.hyperparams.model_decoder_projection_activation)
         residual_connect = self.hyperparams.model_decoder_residual_connect
         forget_bias = self.hyperparams.model_decoder_forget_bias
         drop_out = self.hyperparams.model_decoder_dropout
