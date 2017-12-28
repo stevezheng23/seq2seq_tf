@@ -87,8 +87,15 @@ def create_default_hyperparams():
         model_decoder_decoding="greedy",
         model_decoder_max_len_factor=2.0,
         model_decoder_len_penalty_factor=0.0,
-        model_decoder_beam_size=5
+        model_decoder_beam_size=5,
+        device_num_gpus=1,
+        device_default_gpu_id=0,
+        device_log_device_placement=True,
+        device_allow_soft_placement=True,
+        device_allow_growth=True,
+        device_per_process_gpu_memory_fraction=1.0
     )
+    
     return hyperparams
 
 def load_hyperparams(config_file):

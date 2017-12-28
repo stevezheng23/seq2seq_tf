@@ -26,9 +26,13 @@ def train(logger,
     logger.log_print("##### create infer model #####")
     infer_model = create_infer_model(logger, hyperparams)
     
-    train_sess = tf.Session(graph=train_model.graph)
-    eval_sess = tf.Session(graph=eval_model.graph)
-    infer_sess = tf.Session(graph=infer_model.graph)
+    config_proto = get_config_proto(hyperparams.device_log_device_placement,
+        hyperparams.device_allow_soft_placement, hyperparams.device_allow_growth,
+        hyperparams.device_per_process_gpu_memory_fraction)
+    
+    train_sess = tf.Session(config=config_proto, graph=train_model.graph)
+    eval_sess = tf.Session(config=config_proto, graph=eval_model.graph)
+    infer_sess = tf.Session(config=config_proto, graph=infer_model.graph)
     
     logger.log_print("##### start model training #####")
     summary_output_dir = hyperparams.train_summary_output_dir

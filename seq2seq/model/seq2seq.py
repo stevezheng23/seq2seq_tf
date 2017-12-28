@@ -50,6 +50,11 @@ class Seq2Seq(object):
             self.mode = mode
             self.pretrained_embedding = pretrained_embedding
             
+            self.num_gpus = self.hyperparams.device_num_gpus
+            self.default_gpu_id = self.hyperparams.device_default_gpu_id
+            self.logger.log_print("# {0} gpus are used with default gpu id set as {1}"
+                .format(self.num_gpus, self.default_gpu_id))
+            
             """get batch inputs from data pipeline"""
             src_inputs = self.data_pipeline.source_input
             trg_inputs = self.data_pipeline.target_input
@@ -120,8 +125,10 @@ class Seq2Seq(object):
                              residual_connect,
                              drop_out):
         """create encoder cell"""
-        return create_rnn_cell(num_layer, unit_dim, unit_type, activation,
-            forget_bias, residual_connect, drop_out)
+        cell = create_rnn_cell(num_layer, unit_dim, unit_type, activation,
+            forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+        
+        return cell
     
     def _convert_encoder_state(self,
                                state):
@@ -213,8 +220,10 @@ class Seq2Seq(object):
                              residual_connect,
                              drop_out):
         """create decoder cell"""
-        return create_rnn_cell(num_layer, unit_dim, unit_type, activation, 
-            forget_bias, residual_connect, drop_out)
+        cell = create_rnn_cell(num_layer, unit_dim, unit_type, activation, 
+            forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+        
+        return cell
     
     def _convert_decoder_cell(self,
                               cell,

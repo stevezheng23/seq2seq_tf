@@ -49,5 +49,9 @@
     "model_decoder_attention_type": "bahdanau",
     "model_decoder_attention_dim": 512,
     "model_decoder_decoding": "greedy",
-    "model_decoder_beam_size": 10
+    "model_decoder_beam_size": 10,
+    "device_num_gpus": 1,
+    "device_default_gpu_id": 0,
+    "device_log_device_placement": false,
+    "device_allow_soft_placement": true
 }
