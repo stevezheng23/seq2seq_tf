@@ -1,11 +1,11 @@
 import collections
-import math
 
 import numpy as np
 import tensorflow as tf
 
 from model.seq2seq import *
 from model.seq2seq_attention import *
+from util.default_util import *
 from util.data_util import *
 from util.model_util import *
 from util.eval_util import *
@@ -126,10 +126,12 @@ def get_model_creator(model_type):
     return model_creator
 
 def train_intrinsic_eval(logger,
+                         summary_writer,
                          sess,
                          model,
                          src_embedding,
-                         trg_embedding):
+                         trg_embedding,
+                         global_step):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer)
     
@@ -146,13 +148,16 @@ def train_intrinsic_eval(logger,
         except  tf.errors.OutOfRangeError:
             break
     
-    perplexity = math.exp(loss/word_count)
-    intrinsic_eval_result = IntrinsicEvalLog(metric="perplexity",
+    metric = "perplexity"
+    perplexity = safe_exp(loss/word_count)
+    summary_writer.add_value_summary(metric, perplexity, global_step)
+    intrinsic_eval_result = IntrinsicEvalLog(metric=metric,
         score=perplexity, sample_size=sample_size)
     logger.update_intrinsic_eval(intrinsic_eval_result)
     logger.check_intrinsic_eval()
 
 def train_extrinsic_eval(logger,
+                         summary_writer,
                          sess,
                          model,
                          src_input,
@@ -161,7 +166,7 @@ def train_extrinsic_eval(logger,
                          trg_embedding,
                          batch_size,
                          metric,
-                         eval_id):
+                         global_step):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_input,
@@ -178,13 +183,15 @@ def train_extrinsic_eval(logger,
     
     sample_size = len(predict)
     score = evaluate(predict, trg_input, metric)
+    summary_writer.add_value_summary(metric, score, global_step)
     extrinsic_eval_result = ExtrinsicEvalLog(metric=metric,
         score=score, sample_output=predict, sample_size=sample_size)
     logger.update_extrinsic_eval(extrinsic_eval_result)
     logger.check_extrinsic_eval()
-    logger.check_extrinsic_eval_detail(eval_id)
+    logger.check_extrinsic_eval_detail(global_step)
 
 def train_decode_eval(logger,
+                      summary_writer,
                       sess,
                       model,
                       src_input,
@@ -192,7 +199,8 @@ def train_decode_eval(logger,
                       src_embedding,
                       trg_embedding,
                       sample_size,
-                      random_seed):
+                      random_seed,
+                      global_step):
     np.random.seed(random_seed)
     sample_ids = np.random.randint(0, len(src_input)-1, size=sample_size)
     src_sample_inputs = [src_input[sample_id] for sample_id in sample_ids]
@@ -205,6 +213,8 @@ def train_decode_eval(logger,
     
     decode_result = model.model.decode(sess,
         src_embedding, trg_embedding)
+    if decode_result.summary is not None:
+        summary_writer.add_summary(decode_result.summary, global_step)
     decode_eval_result = DecodeEvalLog(sample_input=src_sample_inputs,
         sample_output=decode_result.sample_sentence, sample_reference=trg_sample_inputs)
     logger.update_decode_eval(decode_eval_result)

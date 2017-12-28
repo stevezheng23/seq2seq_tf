@@ -8,16 +8,19 @@ from util.model_util import *
 
 __all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "Seq2Seq"]
 
-class TrainResult(collections.namedtuple("TrainResult", ("loss", "learning_rate", "global_step", "batch_size", "summary"))):
+class TrainResult(collections.namedtuple("TrainResult",
+    ("loss", "learning_rate", "global_step", "batch_size", "summary"))):
     pass
 
 class EvaluateResult(collections.namedtuple("EvaluateResult", ("loss", "batch_size", "word_count"))):
     pass
 
-class InferResult(collections.namedtuple("InferResult", ("logits", "sample_id", "sample_word", "batch_size"))):
+class InferResult(collections.namedtuple("InferResult",
+    ("logits", "sample_id", "sample_word", "batch_size", "summary"))):
     pass
 
-class DecodeResult(collections.namedtuple("DecodeResult", ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size"))):
+class DecodeResult(collections.namedtuple("DecodeResult",
+    ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size", "summary"))):
     pass
 
 class Seq2Seq(object):
@@ -68,6 +71,8 @@ class Seq2Seq(object):
                 self.infer_sample_id = sample_id
                 self.infer_sample_word = self.trg_vocab_inverted_index.lookup(
                     tf.cast(self.infer_sample_id, tf.int64))
+                
+                self.infer_summary = self._get_infer_summary()
             
             if self.mode != "infer":
                 logit_length = self.data_pipeline.target_output_length
@@ -97,8 +102,7 @@ class Seq2Seq(object):
                 self.update_model, self.clipped_gradients, self.gradient_norm = self._minimize_loss(self.train_loss)
                 
                 """create summary"""
-                self.train_summary = tf.summary.merge([tf.summary.scalar("learning_rate", self.learning_rate),
-                    tf.summary.scalar("train_loss", self.train_loss), tf.summary.scalar("gradient_norm", self.gradient_norm)])
+                self.train_summary = self._get_train_summary()
             
             """create checkpoint saver"""
             if not tf.gfile.Exists(self.hyperparams.train_ckpt_output_dir):
@@ -295,6 +299,7 @@ class Seq2Seq(object):
                 sample_id = outputs.sample_id
                 projections = outputs.rnn_output
             
+            self.decoder_final_state = final_state
             return projections, sample_id, final_state, embedding_placeholder
     
     def _build_graph(self,
@@ -395,6 +400,11 @@ class Seq2Seq(object):
         
         return update_model, clipped_gradients, gradient_norm
     
+    def _get_train_summary(self):
+        """get train summary"""
+        return tf.summary.merge([tf.summary.scalar("learning_rate", self.learning_rate),
+            tf.summary.scalar("train_loss", self.train_loss), tf.summary.scalar("gradient_norm", self.gradient_norm)])
+    
     def train(self,
               sess,
               src_embedding,
@@ -428,22 +438,26 @@ class Seq2Seq(object):
             
             return EvaluateResult(loss=loss, batch_size=batch_size, word_count=word_count)
     
+    def _get_infer_summary(self):
+        """get infer summary"""
+        return tf.no_op()
+    
     def infer(self,
               sess,
               src_embedding,
               trg_embedding):
         """infer seq2seq model"""
         if self.pretrained_embedding == True:
-            logits, sample_id, sample_word, batch_size = sess.run([self.infer_logits,
-                self.infer_sample_id, self.infer_sample_word, self.batch_size],
+            logits, sample_id, sample_word, batch_size, summary = sess.run([self.infer_logits,
+                self.infer_sample_id, self.infer_sample_word, self.batch_size, self.infer_summary],
                 feed_dict={self.encoder_embedding_placeholder: src_embedding,
                     self.decoder_embedding_placeholder: trg_embedding})
         else:
-            logits, sample_id, sample_word, batch_size = sess.run([self.infer_logits,
-                self.infer_sample_id, self.infer_sample_word, self.batch_size])
+            logits, sample_id, sample_word, batch_size, summary = sess.run([self.infer_logits,
+                self.infer_sample_id, self.infer_sample_word, self.batch_size, self.infer_summary])
         
         return InferResult(logits=logits, sample_id=sample_id,
-            sample_word=sample_word, batch_size=batch_size)
+            sample_word=sample_word, batch_size=batch_size, summary=summary)
     
     def decode(self,
                sess,
@@ -454,17 +468,17 @@ class Seq2Seq(object):
         decoding = self.hyperparams.model_decoder_decoding
         beam_size = self.hyperparams.model_decoder_beam_size
         if decoding == "beam_search" and beam_size > 0:
-            logits, _, _, batch_size = infer_result
+            logits, _, _, batch_size, summary = infer_result
             sample_id = infer_result.sample_id[:,:,0]
             sample_word = infer_result.sample_word[:,:,0]
         else:
-            logits, sample_id, sample_word, batch_size = infer_result
+            logits, sample_id, sample_word, batch_size, summary = infer_result
         
         trg_eos = self.hyperparams.data_eos
         sample_sentence = [convert_decoding(sample.tolist(), trg_eos) for sample in sample_word]
         
         return DecodeResult(logits=logits, sample_id=sample_id, sample_word=sample_word,
-            sample_sentence=sample_sentence, batch_size=batch_size)
+            sample_sentence=sample_sentence, batch_size=batch_size, summary=summary)
     
     def save(self,
              sess,

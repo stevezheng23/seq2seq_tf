@@ -1,4 +1,5 @@
 import argparse
+import os.path
 import time
 
 import numpy as np
@@ -10,6 +11,7 @@ from util.train_util import *
 from util.train_logger import *
 from util.eval_logger import *
 from util.debug_logger import *
+from util.summary_writer import *
 
 def add_arguments(parser):
     parser.add_argument("--mode", help="mode to run", required=True)
@@ -29,8 +31,13 @@ def train(logger,
     infer_sess = tf.Session(graph=infer_model.graph)
     
     logger.log_print("##### start model training #####")
-    train_summary_writer = tf.summary.FileWriter(
-        hyperparams.train_summary_output_dir, train_model.graph)
+    summary_output_dir = hyperparams.train_summary_output_dir
+    if not tf.gfile.Exists(summary_output_dir):
+        tf.gfile.MakeDirs(summary_output_dir)
+    
+    train_summary_writer = SummaryWriter(train_model.graph, os.path.join(summary_output_dir, "train"))
+    eval_summary_writer = SummaryWriter(eval_model.graph, os.path.join(summary_output_dir, "eval"))
+    infer_summary_writer = SummaryWriter(infer_model.graph, os.path.join(summary_output_dir, "infer"))
     
     init_model(train_sess, train_model)
     init_model(eval_sess, eval_model)
@@ -49,7 +56,7 @@ def train(logger,
                 train_result = train_model.model.train(train_sess,
                     train_model.src_embedding, train_model.trg_embedding)
                 end_time = time.time()
-
+                
                 global_step = train_result.global_step
                 step_in_epoch += 1
                 train_logger.update(train_result, epoch, step_in_epoch, end_time-start_time)
@@ -60,25 +67,27 @@ def train(logger,
                 if step_in_epoch % hyperparams.train_step_per_ckpt == 0:
                     train_model.model.save(train_sess, global_step)
                 if step_in_epoch % hyperparams.train_step_per_eval == 0:
-                    train_intrinsic_eval(eval_logger, eval_sess, eval_model,
-                        eval_model.src_embedding, eval_model.trg_embedding)
+                    train_intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
+                        eval_model.src_embedding, eval_model.trg_embedding, global_step)
             except tf.errors.OutOfRangeError:
                 train_logger.check()
                 train_model.model.save(train_sess, global_step)
-                train_intrinsic_eval(eval_logger, eval_sess, eval_model,
-                    eval_model.src_embedding, eval_model.trg_embedding)
-                train_extrinsic_eval(eval_logger, infer_sess,
+                train_intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
+                    eval_model.src_embedding, eval_model.trg_embedding, global_step)
+                train_extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
                     infer_model, infer_model.src_input, infer_model.trg_input,
                     infer_model.src_embedding, infer_model.trg_embedding,
                     hyperparams.train_eval_batch_size,
                     hyperparams.train_eval_metric, global_step)
-                train_decode_eval(eval_logger, infer_sess,
+                train_decode_eval(eval_logger, infer_summary_writer, infer_sess,
                     infer_model, infer_model.src_input, infer_model.trg_input,
                     infer_model.src_embedding, infer_model.trg_embedding,
-                    hyperparams.train_decode_sample_size, global_step)
+                    hyperparams.train_decode_sample_size, global_step, global_step)
                 break
 
-    train_summary_writer.close()
+    train_summary_writer.close_writer()
+    eval_summary_writer.close_writer()
+    infer_summary_writer.close_writer()
     logger.log_print("##### finish model training #####")
 
 def main(args):

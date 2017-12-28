@@ -26,6 +26,10 @@ class Seq2SeqAttention(Seq2Seq):
             mode=mode, pretrained_embedding=pretrained_embedding)
         
         self.hyperparams = hyperparams
+        self.mode = mode
+        
+        if self.mode == "infer":
+            self.infer_summary = self._get_infer_summary()
     
     def _convert_decoder_cell(self,
                               cell,
@@ -33,11 +37,14 @@ class Seq2SeqAttention(Seq2Seq):
                               encoder_outputs,
                               encoder_output_length):
         """convert decoder cell"""
+        decoding = self.hyperparams.model_decoder_decoding
+        alignment_history = (self.mode == "infer" and decoding == "greedy")
+        
         attention_mechanism = self._create_attention_mechanism(unit_dim,
             encoder_outputs, encoder_output_length,
             self.hyperparams.model_decoder_attention_type)
         cell = tf.contrib.seq2seq.AttentionWrapper(cell=cell,
-            attention_mechanism=attention_mechanism,
+            attention_mechanism=attention_mechanism, alignment_history=alignment_history,
             attention_layer_size=self.hyperparams.model_decoder_attention_dim)
         
         return cell
@@ -57,6 +64,26 @@ class Seq2SeqAttention(Seq2Seq):
             dtype=tf.float32).clone(cell_state=state)
         
         return state
+    
+    def _get_infer_summary(self):
+        """get infer summary"""
+        decoding = self.hyperparams.model_decoder_decoding
+        summary = tf.no_op()
+        if self.mode == "infer":
+            if decoding == "greedy":
+                summary = self._create_attention_summary(self.decoder_final_state)
+        
+        return summary
+    
+    def _create_attention_summary(self,
+                                  state):
+        """create attention summary"""
+        attention_mapping = state.alignment_history.stack()
+        attention_mapping = tf.expand_dims(tf.transpose(attention_mapping, [1, 2, 0]), -1)
+        attention_mapping *= 255
+        summary = tf.summary.image("attention_mapping", attention_mapping)
+        
+        return summary
     
     def _create_attention_mechanism(self,
                                     unit_dim,
