@@ -29,7 +29,7 @@ def train(logger,
     infer_sess = tf.Session(graph=infer_model.graph)
     
     logger.log_print("##### start model training #####")
-    summary_writer = tf.summary.FileWriter(
+    train_summary_writer = tf.summary.FileWriter(
         hyperparams.train_summary_output_dir, train_model.graph)
     
     init_model(train_sess, train_model)
@@ -56,6 +56,7 @@ def train(logger,
 
                 if step_in_epoch % hyperparams.train_step_per_stat == 0:
                     train_logger.check()
+                    train_summary_writer.add_summary(train_result.summary, global_step)
                 if step_in_epoch % hyperparams.train_step_per_ckpt == 0:
                     train_model.model.save(train_sess, global_step)
                 if step_in_epoch % hyperparams.train_step_per_eval == 0:
@@ -77,7 +78,7 @@ def train(logger,
                     hyperparams.train_decode_sample_size, global_step)
                 break
 
-    summary_writer.close()
+    train_summary_writer.close()
     logger.log_print("##### finish model training #####")
 
 def main(args):

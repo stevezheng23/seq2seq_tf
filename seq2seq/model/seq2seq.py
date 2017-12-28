@@ -8,7 +8,7 @@ from util.model_util import *
 
 __all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "Seq2Seq"]
 
-class TrainResult(collections.namedtuple("TrainResult", ("loss", "learning_rate", "global_step", "batch_size"))):
+class TrainResult(collections.namedtuple("TrainResult", ("loss", "learning_rate", "global_step", "batch_size", "summary"))):
     pass
 
 class EvaluateResult(collections.namedtuple("EvaluateResult", ("loss", "batch_size", "word_count"))):
@@ -94,7 +94,11 @@ class Seq2Seq(object):
                 
                 """minimize optimization loss"""
                 self.logger.log_print("# setup loss minimization mechanism")
-                self.update_model, self.gradient_norm = self._minimize_loss(self.train_loss)
+                self.update_model, self.clipped_gradients, self.gradient_norm = self._minimize_loss(self.train_loss)
+                
+                """create summary"""
+                self.train_summary = tf.summary.merge([tf.summary.scalar("learning_rate", self.learning_rate),
+                    tf.summary.scalar("train_loss", self.train_loss), tf.summary.scalar("gradient_norm", self.gradient_norm)])
             
             """create checkpoint saver"""
             if not tf.gfile.Exists(self.hyperparams.train_ckpt_output_dir):
@@ -389,7 +393,7 @@ class Seq2Seq(object):
         """update model based on gradients"""
         update_model = self.optimizer.apply_gradients(grads_and_vars, global_step=self.global_step)
         
-        return update_model, gradient_norm
+        return update_model, clipped_gradients, gradient_norm
     
     def train(self,
               sess,
@@ -398,16 +402,16 @@ class Seq2Seq(object):
         """train seq2seq model"""
         with tf.variable_scope('seq2seq', reuse=True):
             if self.pretrained_embedding == True:
-                _, loss, learning_rate, global_step, batch_size = sess.run([self.update_model,
-                    self.train_loss, self.learning_rate, self.global_step, self.batch_size],
+                _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
+                    self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary],
                     feed_dict={self.encoder_embedding_placeholder: src_embedding,
                         self.decoder_embedding_placeholder: trg_embedding})
             else:
-                _, loss, learning_rate, global_step, batch_size = sess.run([self.update_model,
-                    self.train_loss, self.learning_rate, self.global_step, self.batch_size])
+                _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
+                    self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary])
             
             return TrainResult(loss=loss, learning_rate=learning_rate,
-                global_step=global_step, batch_size=batch_size)
+                global_step=global_step, batch_size=batch_size, summary=summary)
     
     def evaluate(self,
                  sess,
