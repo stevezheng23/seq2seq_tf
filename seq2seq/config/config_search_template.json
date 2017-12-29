@@ -5,7 +5,7 @@
             "key": "seq_max_len",
             "dtype": "int"
         },
-        "data_src_max_length": {
+        "data_trg_max_length": {
             "stype": "lookup",
             "key": "seq_max_len",
             "dtype": "int"
@@ -120,8 +120,8 @@
             "dtype": "int"
         },
         "num_layer": {
-            "stype": "uniform",
-            "range": [1, 5],
+            "stype": "discrete",
+            "set": [1, 2, 3, 4],
             "dtype": "int"
         },
         "unit_dim": {
