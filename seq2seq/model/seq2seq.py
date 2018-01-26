@@ -4,9 +4,9 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
-from util.model_util import *
+from util.seq2seq_util import *
 
-__all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "Seq2Seq"]
+__all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "EncodeResult", "Seq2Seq"]
 
 class TrainResult(collections.namedtuple("TrainResult",
     ("loss", "learning_rate", "global_step", "batch_size", "summary"))):
@@ -21,6 +21,9 @@ class InferResult(collections.namedtuple("InferResult",
 
 class DecodeResult(collections.namedtuple("DecodeResult",
     ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size", "summary"))):
+    pass
+
+class EncodeResult(collections.namedtuple("EncodeResult", ("encoder_outputs", "batch_size"))):
     pass
 
 class Seq2Seq(object):
@@ -64,9 +67,11 @@ class Seq2Seq(object):
             
             """build model graph"""
             self.logger.log_print("# build model graph")
-            (logits, sample_id, _, self.encoder_embedding_placeholder,
+            (logits, sample_id, encoder_outputs, decoder_final_state, self.encoder_embedding_placeholder,
                 self.decoder_embedding_placeholder) = self._build_graph(src_inputs,
                 trg_inputs, src_input_length, trg_input_length)
+            self.encoder_outputs = encoder_outputs
+            self.decoder_final_state = decoder_final_state
             
             if self.mode == "infer":
                 self.src_inputs_placeholder = self.data_pipeline.source_input_placeholder
@@ -308,7 +313,6 @@ class Seq2Seq(object):
                 sample_id = outputs.sample_id
                 projections = outputs.rnn_output
             
-            self.decoder_final_state = final_state
             return projections, sample_id, final_state, embedding_placeholder
     
     def _build_graph(self,
@@ -328,7 +332,7 @@ class Seq2Seq(object):
             decoder_embedding_placeholder) = self._build_decoder(trg_inputs,
             encoder_final_state, trg_input_length, encoder_outputs, encoder_output_length)
         
-        return logits, sample_id, decoder_final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
+        return logits, sample_id, encoder_outputs, decoder_final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
     
     def _compute_loss(self,
                       logits,
@@ -488,6 +492,19 @@ class Seq2Seq(object):
         
         return DecodeResult(logits=logits, sample_id=sample_id, sample_word=sample_word,
             sample_sentence=sample_sentence, batch_size=batch_size, summary=summary)
+    
+    def encode(self,
+               sess,
+               src_embedding):
+        """encode seq2seq model"""
+        if self.pretrained_embedding == True:
+            encoder_outputs, batch_size = sess.run([self.encoder_outputs,self.batch_size],
+                feed_dict={self.encoder_embedding_placeholder: src_embedding,
+                    self.decoder_embedding_placeholder: trg_embedding})
+        else:
+            encoder_outputs, batch_size = sess.run([self.encoder_outputs,self.batch_size])
+        
+        return EncodeResult(encoder_outputs=encoder_outputs, batch_size=batch_size)
     
     def save(self,
              sess,

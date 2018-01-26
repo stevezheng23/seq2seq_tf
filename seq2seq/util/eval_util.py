@@ -4,7 +4,7 @@ import tensorflow as tf
 from external.bleu import *
 from external.rouge import *
 
-__all__ = ["evaluate", "evaluate_from_file"]
+__all__ = ["evaluate_from_data", "evaluate_from_file"]
 
 def _bleu(pred_data, ref_data):
     """BLEU score for translation task"""
@@ -69,7 +69,7 @@ def _word_accuracy(pred_data, ref_data):
     word_accuracy = total_accuracy / total_count
     return word_accuracy
 
-def evaluate(pred_data, ref_data, metric):
+def evaluate_from_data(pred_data, ref_data, metric):
     """compute evaluation score based on selected metric"""
     pred_and_ref = [(pred, ref) for pred, ref in zip(pred_data, ref_data) if pred and ref]
     pred_data = [pred for (pred, ref) in pred_and_ref]
