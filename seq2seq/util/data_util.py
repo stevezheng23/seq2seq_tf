@@ -5,9 +5,10 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
-__all__ = ["DataPipeline", "create_data_pipeline", "create_infer_pipeline",
+__all__ = ["DataPipeline", "create_src_pipeline", "create_seq2seq_pipeline",
            "load_pretrained_embedding", "create_embedding_file", "convert_embedding",
-           "load_vocab_table", "create_vocab_table", "create_vocab_file", "load_input", "prepare_data"]
+           "load_vocab_table", "create_vocab_table", "create_vocab_file",
+           "load_input", "prepare_data", "prepare_seq2seq_data"]
 
 class DataPipeline(collections.namedtuple("DataPipeline",
     ("initializer", "source_input", "target_input", "target_output",
@@ -16,19 +17,57 @@ class DataPipeline(collections.namedtuple("DataPipeline",
      "target_output_placeholder", "batch_size_placeholder"))):
     pass
 
-def create_data_pipeline(src_file,
-                         trg_file,
-                         src_vocab_index,
-                         trg_vocab_index,
-                         src_max_length,
-                         trg_max_length,
-                         src_reverse,
-                         sos,
-                         eos,
-                         pad,
-                         batch_size,
-                         random_seed):
-    """create data pipeline based on config"""
+def create_src_pipeline(src_vocab_index,
+                        src_max_length,
+                        src_reverse,
+                        pad):
+    """create source data pipeline based on config"""
+    src_pad_id = tf.cast(src_vocab_index.lookup(tf.constant(pad)), tf.int32)
+    
+    src_data_placeholder = tf.placeholder(shape=[None], dtype=tf.string)
+    batch_size_placeholder = tf.placeholder(shape=[], dtype=tf.int64)
+
+    src_dataset = tf.data.Dataset.from_tensor_slices(src_data_placeholder)
+    src_dataset = src_dataset.map(lambda src: tf.string_split([src], delimiter=' ').values)
+    src_dataset = src_dataset.map(lambda src: src[:src_max_length])
+    
+    if src_reverse == True:
+        src_dataset = src_dataset.map(lambda src: tf.reverse(src, axis=[0]))
+    
+    src_dataset = src_dataset.map(lambda src: tf.cast(src_vocab_index.lookup(src), tf.int32))
+    src_dataset = src_dataset.map(lambda src: (src, tf.size(src)))
+    
+    src_dataset = src_dataset.padded_batch(
+        batch_size=batch_size_placeholder,
+        padded_shapes=(
+            tf.TensorShape([None]),
+            tf.TensorShape([])),
+        padding_values=(
+            src_pad_id,
+            0))
+    
+    iterator = src_dataset.make_initializable_iterator()
+    src_input_ids, src_input_len = iterator.get_next()
+    
+    return DataPipeline(initializer=iterator.initializer,
+        source_input=src_input_ids, target_input=None, target_output=None,
+        source_input_length=src_input_len, target_input_length=None, target_output_length=None,
+        source_input_placeholder=src_data_placeholder, target_input_placeholder=None,
+        target_output_placeholder=None, batch_size_placeholder=batch_size_placeholder)
+
+def create_seq2seq_pipeline(src_file,
+                            trg_file,
+                            src_vocab_index,
+                            trg_vocab_index,
+                            src_max_length,
+                            trg_max_length,
+                            src_reverse,
+                            sos,
+                            eos,
+                            pad,
+                            batch_size,
+                            random_seed):
+    """create seq2seq data pipeline based on config"""
     src_pad_id = tf.cast(src_vocab_index.lookup(tf.constant(pad)), tf.int32)
     trg_pad_id = tf.cast(trg_vocab_index.lookup(tf.constant(pad)), tf.int32)
     trg_sos_id = tf.cast(trg_vocab_index.lookup(tf.constant(sos)), tf.int32)
@@ -88,44 +127,6 @@ def create_data_pipeline(src_file,
         source_input_length=src_input_len, target_input_length=trg_input_len, target_output_length=trg_output_len,
         source_input_placeholder=None, target_input_placeholder=None,
         target_output_placeholder=None, batch_size_placeholder=None)
-
-def create_infer_pipeline(src_vocab_index,
-                          src_max_length,
-                          src_reverse,
-                          pad):
-    """create inference pipeline based on config"""
-    src_pad_id = tf.cast(src_vocab_index.lookup(tf.constant(pad)), tf.int32)
-    
-    src_data_placeholder = tf.placeholder(shape=[None], dtype=tf.string)
-    batch_size_placeholder = tf.placeholder(shape=[], dtype=tf.int64)
-
-    src_dataset = tf.data.Dataset.from_tensor_slices(src_data_placeholder)
-    src_dataset = src_dataset.map(lambda src: tf.string_split([src], delimiter=' ').values)
-    src_dataset = src_dataset.map(lambda src: src[:src_max_length])
-    
-    if src_reverse == True:
-        src_dataset = src_dataset.map(lambda src: tf.reverse(src, axis=[0]))
-    
-    src_dataset = src_dataset.map(lambda src: tf.cast(src_vocab_index.lookup(src), tf.int32))
-    src_dataset = src_dataset.map(lambda src: (src, tf.size(src)))
-    
-    src_dataset = src_dataset.padded_batch(
-        batch_size=batch_size_placeholder,
-        padded_shapes=(
-            tf.TensorShape([None]),
-            tf.TensorShape([])),
-        padding_values=(
-            src_pad_id,
-            0))
-    
-    iterator = src_dataset.make_initializable_iterator()
-    src_input_ids, src_input_len = iterator.get_next()
-    
-    return DataPipeline(initializer=iterator.initializer,
-        source_input=src_input_ids, target_input=None, target_output=None,
-        source_input_length=src_input_len, target_input_length=None, target_output_length=None,
-        source_input_placeholder=src_data_placeholder, target_input_placeholder=None,
-        target_output_placeholder=None, batch_size_placeholder=batch_size_placeholder)
 
 def load_pretrained_embedding(embedding_file,
                               embedding_size,
@@ -300,116 +301,104 @@ def load_input(text_file):
         raise FileNotFoundError("text file not found")
 
 def prepare_data(logger,
-                 src_file,
-                 trg_file,
-                 src_vocab_file,
-                 trg_vocab_file,
-                 src_embedding_file,
-                 trg_embedding_file,
-                 src_full_embedding_file,
-                 trg_full_embedding_file,
-                 src_vocab_size,
-                 trg_vocab_size,
-                 src_embed_dim,
-                 trg_embed_dim,
+                 input_file,
+                 vocab_file,
+                 embedding_file,
+                 full_embedding_file,
+                 vocab_size,
+                 embed_dim,
                  unk,
                  sos,
                  eos,
                  pad,
-                 share_vocab,
                  pretrained_embedding):
-    src_input = None
-    trg_input = None
-    if tf.gfile.Exists(src_file):
-        logger.log_print("# loading source input from {0}".format(src_file))
-        src_input, src_input_size = load_input(src_file)
-        logger.log_print("# source input has {0} lines".format(src_input_size))
-    if tf.gfile.Exists(trg_file):
-        logger.log_print("# loading target input from {0}".format(trg_file))
-        trg_input, trg_input_size = load_input(trg_file)
-        logger.log_print("# target input has {0} lines".format(trg_input_size))
+    """prepare input data from input files"""
+    input_data = None
+    if tf.gfile.Exists(input_file):
+        logger.log_print("# loading input data from {0}".format(input_file))
+        input_data, input_size = load_input(input_file)
+        logger.log_print("# input data has {0} lines".format(input_size))
     
-    src_embedding = None
+    embedding_data = None
     if pretrained_embedding == True:
-        if tf.gfile.Exists(src_embedding_file):
-            logger.log_print("# loading source embeddings from {0}".format(src_embedding_file))
-            src_embedding = load_pretrained_embedding(src_embedding_file,
-                src_embed_dim, unk, sos, eos, pad)
-        elif tf.gfile.Exists(src_full_embedding_file):
-            logger.log_print("# loading source embeddings from {0}".format(src_full_embedding_file))
-            src_embedding = load_pretrained_embedding(src_full_embedding_file,
-                src_embed_dim, unk, sos, eos, pad)
-        logger.log_print("# source embeddings has {0} words".format(len(src_embedding)))
+        if tf.gfile.Exists(embedding_file):
+            logger.log_print("# loading embeddings from {0}".format(embedding_file))
+            embedding_data = load_pretrained_embedding(embedding_file, embed_dim, unk, sos, eos, pad)
+        elif tf.gfile.Exists(full_embedding_file):
+            logger.log_print("# loading embeddings from {0}".format(full_embedding_file))
+            embedding_data = load_pretrained_embedding(full_embedding_file, embed_dim, unk, sos, eos, pad)
+        logger.log_print("# embeddings has {0} words".format(len(embedding_data)))
     
-    if tf.gfile.Exists(src_vocab_file):
-        logger.log_print("# loading source vocab from {0}".format(src_vocab_file))
-        (src_vocab_table, src_vocab_size, src_vocab_index,
-            src_vocab_inverted_index) = load_vocab_table(src_vocab_file,
-            src_vocab_size, src_embedding, unk, sos, eos, pad)
-    elif tf.gfile.Exists(src_file):
-        logger.log_print("# creating source vocab from {0}".format(src_file))
-        (src_vocab_table, src_vocab_size, src_vocab_index,
-            src_vocab_inverted_index) = create_vocab_table(src_file,
-            src_vocab_size, src_embedding, unk, sos, eos, pad)
-        logger.log_print("# creating source vocab file {0}".format(src_vocab_file))
-        create_vocab_file(src_vocab_file, src_vocab_table)
+    if tf.gfile.Exists(vocab_file):
+        logger.log_print("# loading vocabs from {0}".format(vocab_file))
+        (vocab_table, vocab_size, vocab_index,
+            vocab_inverted_index) = load_vocab_table(vocab_file,
+            vocab_size, embedding_data, unk, sos, eos, pad)
+    elif tf.gfile.Exists(input_file):
+        logger.log_print("# creating vocabs from {0}".format(input_file))
+        (vocab_table, vocab_size, vocab_index,
+            vocab_inverted_index) = create_vocab_table(input_file,
+            vocab_size, embedding_data, unk, sos, eos, pad)
+        logger.log_print("# creating vocab file {0}".format(vocab_file))
+        create_vocab_file(vocab_file, vocab_table)
     else:
-        raise ValueError("{0} or {1} must be provided".format(src_vocab_file, src_file))
-    logger.log_print("# source vocab table has {0} words".format(src_vocab_size))
+        raise ValueError("{0} or {1} must be provided".format(vocab_file, input_file))
+    logger.log_print("# vocab table has {0} words".format(vocab_size))
     
-    if src_embedding is not None:
-        src_embedding = { k: src_embedding[k] for k in src_vocab_table if k in src_embedding }
-        logger.log_print("# source embeddings has {0} words after filtering".format(len(src_embedding)))
-        if not tf.gfile.Exists(src_embedding_file):
-            logger.log_print("# creating source embeddings file {0}".format(src_embedding_file))
-            create_embedding_file(src_embedding_file, src_embedding)
-        src_embedding = convert_embedding(src_embedding)
+    if embedding_data is not None:
+        embedding_data = { k: embedding_data[k] for k in vocab_table if k in embedding_data }
+        logger.log_print("# embeddings has {0} words after filtering".format(len(embedding_data)))
+        if not tf.gfile.Exists(embedding_file):
+            logger.log_print("# creating embedding file {0}".format(embedding_file))
+            create_embedding_file(embedding_file, embedding_data)
+        embedding_data = convert_embedding(embedding_data)
     
+    return input_data, embedding_data, vocab_size, vocab_index, vocab_inverted_index
+
+def prepare_seq2seq_data(logger,
+                         src_input_file,
+                         trg_input_file,
+                         src_vocab_file,
+                         trg_vocab_file,
+                         src_embedding_file,
+                         trg_embedding_file,
+                         src_full_embedding_file,
+                         trg_full_embedding_file,
+                         src_vocab_size,
+                         trg_vocab_size,
+                         src_embed_dim,
+                         trg_embed_dim,
+                         unk,
+                         sos,
+                         eos,
+                         pad,
+                         share_vocab,
+                         pretrained_embedding):
+    """prepare seq2seq data from source & target input files"""
+    logger.log_print("# prepare source data")
+    (src_input, src_embedding, src_vocab_size,
+        src_vocab_index, src_vocab_inverted_index) = prepare_data(logger,
+        src_input_file, src_vocab_file, src_embedding_file, src_full_embedding_file,
+        src_vocab_size, src_embed_dim, unk, sos, eos, pad, pretrained_embedding)
+    
+    logger.log_print("# prepare target data")
     if share_vocab == True:
+        trg_input = None
+        if tf.gfile.Exists(trg_input_file):
+            logger.log_print("# loading input data from {0}".format(trg_input_file))
+            trg_input, trg_input_size = load_input(input_file)
+            logger.log_print("# input data has {0} lines".format(input_size))
+        
         logger.log_print("# sharing vocab between source and target data")
         trg_embedding = src_embedding
         trg_vocab_size = src_vocab_size
         trg_vocab_index = src_vocab_index
         trg_vocab_inverted_index = src_vocab_inverted_index
-        
-        return (src_input, trg_input, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
-            src_vocab_index, trg_vocab_index, trg_vocab_inverted_index)
-    
-    trg_embedding = None
-    if pretrained_embedding == True:
-        if tf.gfile.Exists(trg_embedding_file):
-            logger.log_print("# loading target embeddings from {0}".format(trg_embedding_file))
-            trg_embedding = load_pretrained_embedding(trg_embedding_file,
-                trg_embed_dim, unk, sos, eos, pad)
-        elif tf.gfile.Exists(trg_full_embedding_file):
-            logger.log_print("# loading target embeddings from {0}".format(trg_full_embedding_file))
-            trg_embedding = load_pretrained_embedding(trg_full_embedding_file,
-                trg_embed_dim, unk, sos, eos, pad)
-        logger.log_print("# target embeddings has {0} words".format(len(trg_embedding)))
-    
-    if tf.gfile.Exists(trg_vocab_file):
-        logger.log_print("# loading target vocab from {0}".format(trg_vocab_file))
-        (trg_vocab_table, trg_vocab_size, trg_vocab_index,
-            trg_vocab_inverted_index) = load_vocab_table(trg_vocab_file,
-            trg_vocab_size, trg_embedding, unk, sos, eos, pad)
-    elif tf.gfile.Exists(trg_file):
-        logger.log_print("# creating target vocab from {0}".format(trg_file))
-        (trg_vocab_table, trg_vocab_size, trg_vocab_index,
-            trg_vocab_inverted_index) = create_vocab_table(trg_file,
-            trg_vocab_size, trg_embedding, unk, sos, eos, pad)
-        logger.log_print("# creating target vocab file {0}".format(trg_vocab_file))
-        create_vocab_file(trg_vocab_file, trg_vocab_table)
     else:
-        raise ValueError("{0} or {1} must be provided".format(trg_vocab_file, trg_file))
-    logger.log_print("# target vocab table has {0} words".format(trg_vocab_size))
-    
-    if trg_embedding is not None:
-        trg_embedding = { k: trg_embedding[k] for k in trg_vocab_table if k in trg_embedding }
-        logger.log_print("# target embeddings has {0} words after filtering".format(len(trg_embedding)))
-        if not tf.gfile.Exists(trg_embedding_file):
-            logger.log_print("# creating target embeddings file {0}".format(trg_embedding_file))
-            create_embedding_file(trg_embedding_file, trg_embedding)
-        trg_embedding = convert_embedding(trg_embedding)
+        (trg_input, trg_embedding, trg_vocab_size,
+            trg_vocab_index, trg_vocab_inverted_index) = prepare_data(logger,
+            trg_input_file, trg_vocab_file, trg_embedding_file, trg_full_embedding_file,
+            trg_vocab_size, trg_embed_dim, unk, sos, eos, pad, pretrained_embedding)
     
     return (src_input, trg_input, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
-        src_vocab_index, trg_vocab_index, trg_vocab_inverted_index)
+        src_vocab_index, trg_vocab_index, src_vocab_inverted_index, trg_vocab_inverted_index)

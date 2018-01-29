@@ -8,7 +8,7 @@ class SummaryWriter(object):
     def __init__(self,
                  graph,
                  output_dir):
-        """initialize debug logger"""       
+        """initialize summary writer"""       
         if not tf.gfile.Exists(output_dir):
             tf.gfile.MakeDirs(output_dir)
         self.summary_writer = tf.summary.FileWriter(output_dir, graph)

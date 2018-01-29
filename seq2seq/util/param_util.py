@@ -34,6 +34,7 @@ def create_default_hyperparams():
         data_pad="<pad>",
         data_unk="<unk>",
         data_log_output_dir="",
+        data_result_output_dir="",
         train_random_seed=0,
         train_batch_size=128,
         train_eval_batch_size=1024,

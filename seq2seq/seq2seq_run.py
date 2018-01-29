@@ -13,6 +13,7 @@ from util.eval_util import *
 from util.eval_logger import *
 from util.debug_logger import *
 from util.summary_writer import *
+from util.result_writer import *
 
 def add_arguments(parser):
     parser.add_argument("--mode", help="mode to run", required=True)
@@ -24,7 +25,7 @@ def intrinsic_eval(logger,
                    model,
                    src_embedding,
                    trg_embedding,
-                   global_step):
+                   global_step=0):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer)
     
@@ -59,7 +60,7 @@ def extrinsic_eval(logger,
                    trg_embedding,
                    batch_size,
                    metric,
-                   global_step):
+                   global_step=0):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_input,
@@ -93,7 +94,7 @@ def decode_eval(logger,
                 trg_embedding,
                 sample_size,
                 random_seed,
-                global_step):
+                global_step=0):
     np.random.seed(random_seed)
     sample_ids = np.random.randint(0, len(src_input)-1, size=sample_size)
     src_sample_inputs = [src_input[sample_id] for sample_id in sample_ids]
@@ -130,7 +131,7 @@ def train(logger,
     eval_sess = tf.Session(config=config_proto, graph=eval_model.graph)
     infer_sess = tf.Session(config=config_proto, graph=infer_model.graph)
     
-    logger.log_print("##### start model training #####")
+    logger.log_print("##### start training #####")
     summary_output_dir = hyperparams.train_summary_output_dir
     if not tf.gfile.Exists(summary_output_dir):
         tf.gfile.MakeDirs(summary_output_dir)
@@ -188,7 +189,7 @@ def train(logger,
     train_summary_writer.close_writer()
     eval_summary_writer.close_writer()
     infer_summary_writer.close_writer()
-    logger.log_print("##### finish model training #####")
+    logger.log_print("##### finish training #####")
 
 def evaluate(logger,
              hyperparams):
@@ -204,7 +205,7 @@ def evaluate(logger,
     eval_sess = tf.Session(config=config_proto, graph=eval_model.graph)
     infer_sess = tf.Session(config=config_proto, graph=infer_model.graph)
     
-    logger.log_print("##### start model evaluation #####")
+    logger.log_print("##### start evaluation #####")
     summary_output_dir = hyperparams.train_summary_output_dir
     if not tf.gfile.Exists(summary_output_dir):
         tf.gfile.MakeDirs(summary_output_dir)
@@ -215,23 +216,60 @@ def evaluate(logger,
     init_model(eval_sess, eval_model)
     init_model(infer_sess, infer_model)
     
-    global_step = 0
     eval_logger = EvalLogger(hyperparams.data_log_output_dir)
     intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
-        eval_model.src_embedding, eval_model.trg_embedding, global_step)
+        eval_model.src_embedding, eval_model.trg_embedding)
     extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
         infer_model, infer_model.src_input, infer_model.trg_input,
         infer_model.src_embedding, infer_model.trg_embedding,
         hyperparams.train_eval_batch_size,
-        hyperparams.train_eval_metric, global_step)
+        hyperparams.train_eval_metric)
     decode_eval(eval_logger, infer_summary_writer, infer_sess,
         infer_model, infer_model.src_input, infer_model.trg_input,
         infer_model.src_embedding, infer_model.trg_embedding,
-        hyperparams.train_decode_sample_size, global_step, global_step)
+        hyperparams.train_decode_sample_size, 0)
     
     eval_summary_writer.close_writer()
     infer_summary_writer.close_writer()
-    logger.log_print("##### finish model evaluation #####")
+    logger.log_print("##### finish evaluation #####")
+
+def encode(logger,
+           hyperparams):
+    logger.log_print("##### create encode model #####")
+    encode_model = create_encode_model(logger, hyperparams)
+    
+    config_proto = get_config_proto(hyperparams.device_log_device_placement,
+        hyperparams.device_allow_soft_placement, hyperparams.device_allow_growth,
+        hyperparams.device_per_process_gpu_memory_fraction)
+    
+    encode_sess = tf.Session(config=config_proto, graph=encode_model.graph)
+    
+    logger.log_print("##### start encoding #####")
+    summary_output_dir = hyperparams.train_summary_output_dir
+    if not tf.gfile.Exists(summary_output_dir):
+        tf.gfile.MakeDirs(summary_output_dir)
+    
+    encode_summary_writer = SummaryWriter(encode_model.graph, os.path.join(summary_output_dir, "encode"))
+    result_writer = ResultWriter(hyperparams.data_result_output_dir)
+    
+    init_model(encode_sess, encode_model)
+    load_model(encode_sess, encode_model)
+    encode_sess.run(encode_model.data_pipeline.initializer,
+        feed_dict={encode_model.model.src_inputs_placeholder: encode_model.src_input,
+            encode_model.model.batch_size_placeholder: hyperparams.train_eval_batch_size})
+    
+    encoding = []
+    while True:
+        try:
+            encode_result = encode_model.model.encode(encode_sess, encode_model.src_embedding)
+            encoding.extend([encode_result.encoder_outputs[i,:encode_result.encoder_output_length[i],:]
+                for i in range(len(encode_result.encoder_outputs))])
+        except  tf.errors.OutOfRangeError:
+            break
+    
+    result_writer.write_result(encoding, "encode")
+    encode_summary_writer.close_writer()
+    logger.log_print("##### finish encoding #####")
 
 def main(args):
     hyperparams = load_hyperparams(args.config)
@@ -244,6 +282,8 @@ def main(args):
         train(logger, hyperparams)
     elif (args.mode == 'eval'):
         evaluate(logger, hyperparams)
+    elif (args.mode == 'encode'):
+        encode(logger, hyperparams)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
