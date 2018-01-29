@@ -1,5 +1,6 @@
 import codecs
 import os.path
+import json
 
 import numpy as np
 import tensorflow as tf
@@ -18,9 +19,9 @@ class ResultWriter(object):
     def write_result(self,
                      results,
                      result_tag,
-                     result_id=0):
+                     result_id):
         """write result to file"""
-        result_file = os.path.join(self.output_dir, "{0}_{1}.result".format(result_tag, result_id))
+        result_file = os.path.join(self.output_dir, "{0}_{1}_{2}.result".format(result_tag, result_id, , time.time()))
         with codecs.getwriter("utf-8")(tf.gfile.GFile(result_file, mode="w")) as result_writer:
             for result in results:
-                result_writer.write("{0}\r\n".format(result))
+                result_writer.write("{0}\r\n".format(json.dumps(result)))

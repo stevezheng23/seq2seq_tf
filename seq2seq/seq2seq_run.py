@@ -25,7 +25,7 @@ def intrinsic_eval(logger,
                    model,
                    src_embedding,
                    trg_embedding,
-                   global_step=0):
+                   global_step):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer)
     
@@ -60,7 +60,7 @@ def extrinsic_eval(logger,
                    trg_embedding,
                    batch_size,
                    metric,
-                   global_step=0):
+                   global_step):
     load_model(sess, model)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_input,
@@ -94,7 +94,7 @@ def decode_eval(logger,
                 trg_embedding,
                 sample_size,
                 random_seed,
-                global_step=0):
+                global_step):
     np.random.seed(random_seed)
     sample_ids = np.random.randint(0, len(src_input)-1, size=sample_size)
     src_sample_inputs = [src_input[sample_id] for sample_id in sample_ids]
@@ -183,7 +183,8 @@ def train(logger,
                 decode_eval(eval_logger, infer_summary_writer, infer_sess,
                     infer_model, infer_model.src_input, infer_model.trg_input,
                     infer_model.src_embedding, infer_model.trg_embedding,
-                    hyperparams.train_decode_sample_size, global_step, global_step)
+                    hyperparams.train_decode_sample_size,
+                    hyperparams.train_random_seed + global_step, global_step)
                 break
 
     train_summary_writer.close_writer()
@@ -216,18 +217,19 @@ def evaluate(logger,
     init_model(eval_sess, eval_model)
     init_model(infer_sess, infer_model)
     
+    global_step = 0
     eval_logger = EvalLogger(hyperparams.data_log_output_dir)
     intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
-        eval_model.src_embedding, eval_model.trg_embedding)
+        eval_model.src_embedding, eval_model.trg_embedding, global_step)
     extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
         infer_model, infer_model.src_input, infer_model.trg_input,
         infer_model.src_embedding, infer_model.trg_embedding,
         hyperparams.train_eval_batch_size,
-        hyperparams.train_eval_metric)
+        hyperparams.train_eval_metric, global_step)
     decode_eval(eval_logger, infer_summary_writer, infer_sess,
         infer_model, infer_model.src_input, infer_model.trg_input,
         infer_model.src_embedding, infer_model.trg_embedding,
-        hyperparams.train_decode_sample_size, 0)
+        hyperparams.train_decode_sample_size, hyperparams.train_random_seed, global_step)
     
     eval_summary_writer.close_writer()
     infer_summary_writer.close_writer()
@@ -262,12 +264,18 @@ def encode(logger,
     while True:
         try:
             encode_result = encode_model.model.encode(encode_sess, encode_model.src_embedding)
-            encoding.extend([encode_result.encoder_outputs[i,:encode_result.encoder_output_length[i],:]
-                for i in range(len(encode_result.encoder_outputs))])
+            encoding.extend(zip(encode_result.encoder_output_length.tolist(), encode_result.encoder_outputs.tolist()))
         except  tf.errors.OutOfRangeError:
             break
     
-    result_writer.write_result(encoding, "encode")
+    encoding_size = len(encoding)
+    encoding_sample = encode_model.src_input
+    encoding_length = [encoding[i][0] for i in range(encoding_size)]
+    encoding = [encoding[i][1][:encoding[i][0]] for i in range(encoding_size)]
+    encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i],
+        "encoding": encoding[i], } for i in range(encoding_size)]
+    result_writer.write_result(encoding, "encode", 0)
+    
     encode_summary_writer.close_writer()
     logger.log_print("##### finish encoding #####")
 
