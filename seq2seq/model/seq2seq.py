@@ -75,7 +75,7 @@ class Seq2Seq(object):
             if self.mode == "encode":               
                 self.logger.log_print("# build encoder for seq2seq model")
                 (encoder_outputs, _, encoder_output_length,
-                    encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
+                    self.encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
                 self.encoder_outputs = encoder_outputs
                 self.encoder_output_length = encoder_output_length
             else:
