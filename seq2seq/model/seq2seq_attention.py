@@ -16,7 +16,8 @@ class Seq2SeqAttention(Seq2Seq):
                  trg_vocab_index,
                  trg_vocab_inverted_index=None,
                  mode="train",
-                 pretrained_embedding=False):
+                 pretrained_embedding=False,
+                 scope="seq2seq"):
         """sequence-to-sequence model with attention"""
         super(Seq2SeqAttention, self).__init__(logger=logger,
             hyperparams=hyperparams, data_pipeline=data_pipeline,

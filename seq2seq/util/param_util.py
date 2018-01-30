@@ -63,6 +63,7 @@ def create_default_hyperparams():
         train_optimizer_adam_beta_2=0.999,
         train_optimizer_adam_epsilon=1e-08,
         model_type="vanilla",
+        model_scope="seq2seq",
         model_pretrained_embedding=False,
         model_encoder_type="bi",
         model_encoder_embed_dim=300,

@@ -39,9 +39,10 @@ class Seq2Seq(object):
                  trg_vocab_index,
                  trg_vocab_inverted_index=None,
                  mode="train",
-                 pretrained_embedding=False):
+                 pretrained_embedding=False,
+                 scope="seq2seq"):
         """initialize seq2seq model"""
-        with tf.variable_scope("seq2seq", reuse=tf.AUTO_REUSE):
+        with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             self.logger = logger
             self.hyperparams = hyperparams
             
@@ -53,6 +54,7 @@ class Seq2Seq(object):
             self.trg_vocab_inverted_index = trg_vocab_inverted_index
             self.mode = mode
             self.pretrained_embedding = pretrained_embedding
+            self.scope = scope
             
             self.num_gpus = self.hyperparams.device_num_gpus
             self.default_gpu_id = self.hyperparams.device_default_gpu_id
@@ -431,33 +433,31 @@ class Seq2Seq(object):
               src_embedding,
               trg_embedding):
         """train seq2seq model"""
-        with tf.variable_scope('seq2seq', reuse=True):
-            if self.pretrained_embedding == True:
-                _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
-                    self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary],
-                    feed_dict={self.encoder_embedding_placeholder: src_embedding,
-                        self.decoder_embedding_placeholder: trg_embedding})
-            else:
-                _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
-                    self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary])
-            
-            return TrainResult(loss=loss, learning_rate=learning_rate,
-                global_step=global_step, batch_size=batch_size, summary=summary)
+        if self.pretrained_embedding == True:
+            _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
+                self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary],
+                feed_dict={self.encoder_embedding_placeholder: src_embedding,
+                    self.decoder_embedding_placeholder: trg_embedding})
+        else:
+            _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
+                self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary])
+        
+        return TrainResult(loss=loss, learning_rate=learning_rate,
+            global_step=global_step, batch_size=batch_size, summary=summary)
     
     def evaluate(self,
                  sess,
                  src_embedding,
                  trg_embedding):
         """evaluate seq2seq model"""
-        with tf.variable_scope('seq2seq', reuse=True):
-            if self.pretrained_embedding == True:
-                loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count],
-                    feed_dict={self.encoder_embedding_placeholder: src_embedding,
-                        self.decoder_embedding_placeholder: trg_embedding})
-            else:
-                loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count])
-            
-            return EvaluateResult(loss=loss, batch_size=batch_size, word_count=word_count)
+        if self.pretrained_embedding == True:
+            loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count],
+                feed_dict={self.encoder_embedding_placeholder: src_embedding,
+                    self.decoder_embedding_placeholder: trg_embedding})
+        else:
+            loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count])
+        
+        return EvaluateResult(loss=loss, batch_size=batch_size, word_count=word_count)
     
     def _get_infer_summary(self):
         """get infer summary"""
@@ -488,6 +488,7 @@ class Seq2Seq(object):
         infer_result = self.infer(sess, src_embedding, trg_embedding)
         decoding = self.hyperparams.model_decoder_decoding
         beam_size = self.hyperparams.model_decoder_beam_size
+        
         if decoding == "beam_search" and beam_size > 0:
             logits, _, _, batch_size, summary = infer_result
             sample_id = infer_result.sample_id[:,:,0]
