@@ -1,0 +1,123 @@
+{
+    "hyperparams": {
+        "data_src_max_length": {
+            "stype": "lookup",
+            "key": "seq_max_len",
+            "dtype": "int"
+        },
+        "data_trg_max_length": {
+            "stype": "lookup",
+            "key": "seq_max_len",
+            "dtype": "int"
+        },
+        "train_batch_size": {
+            "stype": "discrete",
+            "set": [16, 32, 64, 128],
+            "dtype": "int"
+        },
+        "train_optimizer_type": {
+            "stype": "discrete",
+            "set": ["sgd", "adam"],
+            "dtype": "string"
+        },
+        "train_optimizer_learning_rate": {
+            "stype": "log",
+            "range": [0.00001, 1.0],
+            "dtype": "float"
+        },
+        "model_encoder_num_layer": {
+            "stype": "lookup",
+            "key": "num_layer",
+            "dtype": "int"
+        },
+        "model_encoder_unit_dim": {
+            "stype": "lookup",
+            "key": "unit_dim",
+            "dtype": "int"
+        },
+        "model_encoder_unit_type": {
+            "stype": "lookup",
+            "key": "unit_type",
+            "dtype": "string"
+        },
+        "model_encoder_hidden_activation": {
+            "stype": "lookup",
+            "key": "hidden_activation",
+            "dtype": "string"
+        },
+        "model_encoder_dropout": {
+            "stype": "lookup",
+            "key": "dropout",
+            "dtype": "float"
+        },
+        "model_decoder_num_layer": {
+            "stype": "lookup",
+            "key": "num_layer",
+            "scale": 2.0,
+            "shift": 0.0,
+            "dtype": "int"
+        },
+        "model_decoder_unit_dim": {
+            "stype": "lookup",
+            "key": "unit_dim",
+            "dtype": "int"
+        },
+        "model_decoder_unit_type": {
+            "stype": "lookup",
+            "key": "unit_type",
+            "dtype": "string"
+        },
+        "model_decoder_hidden_activation": {
+            "stype": "lookup",
+            "key": "hidden_activation",
+            "dtype": "string"
+        },
+        "model_decoder_dropout": {
+            "stype": "lookup",
+            "key": "dropout",
+            "dtype": "float"
+        },
+        "model_decoder_attention_type": {
+            "stype": "discrete",
+            "set": ["bahdanau", "luong"],
+            "dtype": "string"
+        },
+        "model_decoder_attention_dim": {
+            "stype": "uniform",
+            "range": [50, 500],
+            "dtype": "int"
+        }
+    },
+    "variables": {
+        "seq_max_len": {
+            "stype": "uniform",
+            "range": [10, 100],
+            "dtype": "int"
+        },
+        "num_layer": {
+            "stype": "discrete",
+            "set": [1, 2],
+            "dtype": "int"
+        },
+        "unit_dim": {
+            "stype": "uniform",
+            "range": [100, 1000],
+            "dtype": "int"
+        },
+        "unit_type": {
+            "stype": "discrete",
+            "set": ["lstm", "gru"],
+            "dtype": "string"
+        },
+        "hidden_activation": {
+            "stype": "discrete",
+            "set": ["tanh", "relu"],
+            "dtype": "string"
+        },
+        "dropout": {
+            "stype": "uniform",
+            "range": [0.0, 0.8],
+            "dtype": "float"
+        }
+    }
+}
