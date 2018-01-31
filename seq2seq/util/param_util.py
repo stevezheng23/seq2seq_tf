@@ -92,10 +92,10 @@ def create_default_hyperparams():
         model_decoder_beam_size=5,
         device_num_gpus=1,
         device_default_gpu_id=0,
-        device_log_device_placement=True,
-        device_allow_soft_placement=True,
-        device_allow_growth=True,
-        device_per_process_gpu_memory_fraction=1.0
+        device_log_device_placement=False,
+        device_allow_soft_placement=False,
+        device_allow_growth=False,
+        device_per_process_gpu_memory_fraction=0.95
     )
     
     return hyperparams

@@ -55,5 +55,7 @@
     "device_num_gpus": 1,
     "device_default_gpu_id": 0,
     "device_log_device_placement": false,
-    "device_allow_soft_placement": true
+    "device_allow_soft_placement": true,
+    "device_allow_growth": false,
+    "device_per_process_gpu_memory_fraction": 0.95
 }
