@@ -84,14 +84,14 @@
         },
         "model_decoder_attention_dim": {
             "stype": "uniform",
-            "range": [50, 500],
+            "range": [30, 300],
             "dtype": "int"
         }
     },
     "variables": {
         "seq_max_len": {
             "stype": "uniform",
-            "range": [10, 100],
+            "range": [20, 50],
             "dtype": "int"
         },
         "num_layer": {
