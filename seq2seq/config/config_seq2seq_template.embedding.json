@@ -33,7 +33,7 @@
     "train_optimizer_adam_beta_1": 0.9,
     "train_optimizer_adam_beta_2": 0.999,
     "train_optimizer_adam_epsilon": 1e-08,
-    "model_type": "attention",
+    "model_type": "vanilla",
     "model_scope": "seq2seq",
     "model_pretrained_embedding": true,
     "model_encoder_type": "bi",
