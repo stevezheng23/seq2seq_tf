@@ -112,7 +112,8 @@ def load_hyperparams(config_file):
     else:
         raise FileNotFoundError("config file not found")
 
-def generate_search_lookup(search, search_lookup=None):
+def generate_search_lookup(search,
+                           search_lookup=None):
     search_lookup = search_lookup if search_lookup else {}
     search_type = search["stype"]
     data_type = search["dtype"]
@@ -161,12 +162,15 @@ def generate_search_lookup(search, search_lookup=None):
     
     return search_sample
 
-def search_hyperparams(hyperparams, config_file, num_group):
+def search_hyperparams(hyperparams,
+                       config_file,
+                       num_group,
+                       random_seed):
     """search hyperparameters based on search config"""
     if tf.gfile.Exists(config_file):
         with codecs.getreader("utf-8")(tf.gfile.GFile(config_file, "rb")) as file:
             hyperparams_group = []
-            np.random.seed(hyperparams.train_random_seed)
+            np.random.seed(random_seed)
             search_setting = json.load(file)
             hyperparams_search_setting = search_setting["hyperparams"]
             variables_search_setting = search_setting["variables"]
