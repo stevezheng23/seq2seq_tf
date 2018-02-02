@@ -327,7 +327,9 @@ def prepare_data(logger,
         elif tf.gfile.Exists(full_embedding_file):
             logger.log_print("# loading embeddings from {0}".format(full_embedding_file))
             embedding_data = load_pretrained_embedding(full_embedding_file, embed_dim, unk, sos, eos, pad)
-        logger.log_print("# embeddings has {0} words".format(len(embedding_data)))
+        
+        embedding_size = len(embedding_data) if embedding_data is not None else 0
+        logger.log_print("# embeddings has {0} words".format(embedding_size))
     
     if tf.gfile.Exists(vocab_file):
         logger.log_print("# loading vocabs from {0}".format(vocab_file))
