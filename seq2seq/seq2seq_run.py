@@ -264,16 +264,24 @@ def encode(logger,
     while True:
         try:
             encode_result = encode_model.model.encode(encode_sess, encode_model.src_embedding)
-            encoding.extend(zip(encode_result.encoder_output_length.tolist(), encode_result.encoder_outputs.tolist()))
+            encoding.extend(zip(encode_result.encoder_output_length.tolist(),
+                encode_result.encoder_outputs.tolist(), encode_result.encoder_final_state.tolist()))
         except  tf.errors.OutOfRangeError:
             break
     
     encoding_size = len(encoding)
     encoding_sample = encode_model.src_input
     encoding_length = [encoding[i][0] for i in range(encoding_size)]
-    encoding = [encoding[i][1][:encoding[i][0]] for i in range(encoding_size)]
-    encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i],
-        "encoding": encoding[i], } for i in range(encoding_size)]
+    
+    encoding_vector = None
+    if hyperparams.model_encoder_encoding == "context":
+        encoding_vector = [encoding[i][1][:encoding[i][0]] for i in range(encoding_size)]
+    elif hyperparams.model_encoder_encoding == "summary":
+        encoding_vector = [encoding[i][2] for i in range(encoding_size)]
+    
+    encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i], 
+        "encoding_type": hyperparams.model_encoder_encoding,
+        "encoding_vector": encoding_vector[i] } for i in range(encoding_size)]
     result_writer.write_result(encoding, "encode", 0)
     
     encode_summary_writer.close_writer()

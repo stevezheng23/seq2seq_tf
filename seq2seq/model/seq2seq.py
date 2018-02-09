@@ -24,7 +24,7 @@ class DecodeResult(collections.namedtuple("DecodeResult",
     pass
 
 class EncodeResult(collections.namedtuple("EncodeResult",
-    ("encoder_outputs", "encoder_output_length", "batch_size"))):
+    ("encoder_outputs", "encoder_final_state", "encoder_output_length", "batch_size"))):
     pass
 
 class Seq2Seq(object):
@@ -76,9 +76,10 @@ class Seq2Seq(object):
             self.logger.log_print("# build graph for seq2seq model")
             if self.mode == "encode":               
                 self.logger.log_print("# build encoder for seq2seq model")
-                (encoder_outputs, _, encoder_output_length,
+                (encoder_outputs, encoder_final_state, encoder_output_length,
                     self.encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
                 self.encoder_outputs = encoder_outputs
+                self.encoder_final_state = tf.concat([encoder_final_state[0], encoder_final_state[1]], -1)
                 self.encoder_output_length = encoder_output_length
             else:
                 (logits, sample_id, _, decoder_final_state, self.encoder_embedding_placeholder,
@@ -507,14 +508,15 @@ class Seq2Seq(object):
                src_embedding):
         """encode seq2seq model"""
         if self.pretrained_embedding == True:
-            (encoder_outputs, encoder_output_length,
-                batch_size) = sess.run([self.encoder_outputs, self.encoder_output_length, self.batch_size],
-                feed_dict={self.encoder_embedding_placeholder: src_embedding})
+            (encoder_outputs, encoder_final_state, encoder_output_length,
+                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state,
+                self.encoder_output_length, self.batch_size], feed_dict={self.encoder_embedding_placeholder: src_embedding})
         else:
-            (encoder_outputs, encoder_output_length,
-                batch_size) = sess.run([self.encoder_outputs, self.encoder_output_length, self.batch_size])
+            (encoder_outputs, encoder_final_state, encoder_output_length,
+                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state,
+                self.encoder_output_length, self.batch_size])
         
-        return EncodeResult(encoder_outputs=encoder_outputs,
+        return EncodeResult(encoder_outputs=encoder_outputs, encoder_final_state=encoder_final_state,
             encoder_output_length=encoder_output_length, batch_size=batch_size)
     
     def save(self,

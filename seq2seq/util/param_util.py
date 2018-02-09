@@ -74,6 +74,7 @@ def create_default_hyperparams():
         model_encoder_residual_connect=False,
         model_encoder_forget_bias=1.0,
         model_encoder_dropout=0.1,
+        model_encoder_encoding="summary",
         model_decoder_type="uni",
         model_decoder_embed_dim=300,
         model_decoder_num_layer=2,
