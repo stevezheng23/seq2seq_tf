@@ -281,7 +281,8 @@ def encode(logger,
     
     encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i], 
         "encoding_type": hyperparams.model_encoder_encoding,
-        "encoding_vector": encoding_vector[i] } for i in range(encoding_size)]
+        "encoding_vector": encoding_vector[i] if encoding_vector != None else None }
+        for i in range(encoding_size)]
     result_writer.write_result(encoding, "encode", 0)
     
     encode_summary_writer.close_writer()
