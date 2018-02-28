@@ -264,8 +264,8 @@ def encode(logger,
     while True:
         try:
             encode_result = encode_model.model.encode(encode_sess, encode_model.src_embedding)
-            encoding.extend(zip(encode_result.encoder_output_length.tolist(),
-                encode_result.encoder_outputs.tolist(), encode_result.encoder_final_state.tolist()))
+            encoding.extend(zip(encode_result.encoder_output_length.tolist(), encode_result.encoder_outputs.tolist(),
+                encode_result.encoder_final_state.tolist(), encode_result.encoder_embedding.tolist()))
         except  tf.errors.OutOfRangeError:
             break
     
@@ -278,6 +278,8 @@ def encode(logger,
         encoding_vector = [encoding[i][1][:encoding[i][0]] for i in range(encoding_size)]
     elif hyperparams.model_encoder_encoding == "summary":
         encoding_vector = [encoding[i][2] for i in range(encoding_size)]
+    elif hyperparams.model_encoder_encoding == "embedding":
+        encoding_vector = [encoding[i][3] for i in range(encoding_size)]
     
     encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i], 
         "encoding_type": hyperparams.model_encoder_encoding,

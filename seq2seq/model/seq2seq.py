@@ -24,7 +24,7 @@ class DecodeResult(collections.namedtuple("DecodeResult",
     pass
 
 class EncodeResult(collections.namedtuple("EncodeResult",
-    ("encoder_outputs", "encoder_final_state", "encoder_output_length", "batch_size"))):
+    ("encoder_outputs", "encoder_final_state", "encoder_output_length", "encoder_embedding", "batch_size"))):
     pass
 
 class Seq2Seq(object):
@@ -76,16 +76,22 @@ class Seq2Seq(object):
             self.logger.log_print("# build graph for seq2seq model")
             if self.mode == "encode":               
                 self.logger.log_print("# build encoder for seq2seq model")
-                (encoder_outputs, encoder_final_state, encoder_output_length,
-                    self.encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
+                (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
+                    encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
                 self.encoder_outputs = encoder_outputs
                 self.encoder_final_state = tf.concat([encoder_final_state[0], encoder_final_state[1]], -1)
                 self.encoder_output_length = encoder_output_length
+                self.encoder_embedding = encoder_embedding
+                self.encoder_embedding_placeholder = encoder_embedding_placeholder
             else:
-                (logits, sample_id, _, decoder_final_state, self.encoder_embedding_placeholder,
-                    self.decoder_embedding_placeholder) = self._build_graph(src_inputs,
-                    trg_inputs, src_input_length, trg_input_length)
+                (logits, sample_id, _, decoder_final_state, encoder_embedding, decoder_embedding,
+                    encoder_embedding_placeholder, decoder_embedding_placeholder) = self._build_graph(src_inputs,
+                        trg_inputs, src_input_length, trg_input_length)
                 self.decoder_final_state = decoder_final_state
+                self.encoder_embedding = encoder_embedding
+                self.decoder_embedding = decoder_embedding
+                self.encoder_embedding_placeholder = encoder_embedding_placeholder
+                self.decoder_embedding_placeholder = decoder_embedding_placeholder
             
             if self.mode == "infer":
                 self.infer_logits = logits
@@ -225,7 +231,7 @@ class Seq2Seq(object):
             final_state = self._convert_encoder_state(final_state)
             outputs, output_length = self._convert_encoder_outputs(outputs, input_length)
             
-            return outputs, final_state, output_length, embedding_placeholder
+            return outputs, final_state, output_length, embedding_lookup, embedding_placeholder
         
     def _create_decoder_cell(self,
                              num_layer,
@@ -296,6 +302,7 @@ class Seq2Seq(object):
             projector = tf.layers.Dense(units=self.trg_vocab_size, activation=projection_activation)
             
             if self.mode == "infer":
+                embedding_lookup = None
                 max_len = tf.cast(tf.round(tf.cast(tf.reduce_max(encoder_output_length), tf.float32) *
                     self.hyperparams.model_decoder_max_len_factor), tf.int32)
                 start_tokens = tf.fill([self.batch_size], trg_sos_id)
@@ -324,7 +331,7 @@ class Seq2Seq(object):
                 sample_id = outputs.sample_id
                 projections = outputs.rnn_output
             
-            return projections, sample_id, final_state, embedding_placeholder
+            return projections, sample_id, final_state, embedding_lookup, embedding_placeholder
     
     def _build_graph(self,
                      src_inputs,
@@ -334,16 +341,17 @@ class Seq2Seq(object):
         """build graph for seq2seq model"""       
         """encoder: encode source inputs to get encoder outputs"""
         self.logger.log_print("# build encoder for seq2seq model")
-        (encoder_outputs, encoder_final_state, encoder_output_length,
+        (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
             encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
         
         """decoder: decode target outputs based target inputs and encoder outputs"""
         self.logger.log_print("# build decoder for seq2seq model")
-        (logits, sample_id, decoder_final_state,
+        (logits, sample_id, decoder_final_state, decoder_embedding,
             decoder_embedding_placeholder) = self._build_decoder(trg_inputs,
             encoder_final_state, trg_input_length, encoder_outputs, encoder_output_length)
         
-        return logits, sample_id, encoder_outputs, decoder_final_state, encoder_embedding_placeholder, decoder_embedding_placeholder
+        return (logits, sample_id, encoder_outputs, decoder_final_state, encoder_embedding,
+            decoder_embedding, encoder_embedding_placeholder, decoder_embedding_placeholder)
     
     def _compute_loss(self,
                       logits,
@@ -508,16 +516,16 @@ class Seq2Seq(object):
                src_embedding):
         """encode seq2seq model"""
         if self.pretrained_embedding == True:
-            (encoder_outputs, encoder_final_state, encoder_output_length,
-                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state,
-                self.encoder_output_length, self.batch_size], feed_dict={self.encoder_embedding_placeholder: src_embedding})
+            (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
+                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state, self.encoder_output_length,
+                self.encoder_embedding, self.batch_size], feed_dict={self.encoder_embedding_placeholder: src_embedding})
         else:
-            (encoder_outputs, encoder_final_state, encoder_output_length,
-                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state,
-                self.encoder_output_length, self.batch_size])
+            (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
+                batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state, self.encoder_output_length,
+                self.encoder_embedding, self.batch_size])
         
         return EncodeResult(encoder_outputs=encoder_outputs, encoder_final_state=encoder_final_state,
-            encoder_output_length=encoder_output_length, batch_size=batch_size)
+            encoder_output_length=encoder_output_length, encoder_embedding=encoder_embedding, batch_size=batch_size)
     
     def save(self,
              sess,
