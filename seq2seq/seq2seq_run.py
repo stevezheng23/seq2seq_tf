@@ -264,8 +264,13 @@ def encode(logger,
     while True:
         try:
             encode_result = encode_model.model.encode(encode_sess, encode_model.src_embedding)
-            encoding.extend(zip(encode_result.encoder_output_length.tolist(), encode_result.encoder_outputs.tolist(),
-                encode_result.encoder_final_state.tolist(), encode_result.encoder_embedding.tolist()))
+            batch_size = encode_result.encoder_output_length.shape[0]
+            batch_encoding = [(encode_result.encoder_output_length[i].tolist(),
+                encode_result.encoder_outputs[i,:encode_result.encoder_output_length[i],:].tolist(),
+                encode_result.encoder_final_state[-1,i,:].tolist(),
+                encode_result.encoder_embedding[i,:encode_result.encoder_output_length[i],:].tolist())
+                for i in range(batch_size)]
+            encoding.extend(batch_encoding)
         except  tf.errors.OutOfRangeError:
             break
     
@@ -275,7 +280,7 @@ def encode(logger,
     
     encoding_vector = None
     if hyperparams.model_encoder_encoding == "context":
-        encoding_vector = [encoding[i][1][:encoding[i][0]] for i in range(encoding_size)]
+        encoding_vector = [encoding[i][1] for i in range(encoding_size)]
     elif hyperparams.model_encoder_encoding == "summary":
         encoding_vector = [encoding[i][2] for i in range(encoding_size)]
     elif hyperparams.model_encoder_encoding == "embedding":
