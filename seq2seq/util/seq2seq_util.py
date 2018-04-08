@@ -30,6 +30,7 @@ def create_embedding(vocab_size,
     return embedding, embedding_placeholder
 
 def create_activation_function(activation):
+    """create activation function"""
     if activation == "tanh":
         activation_function = tf.nn.tanh
     elif activation == "relu":
