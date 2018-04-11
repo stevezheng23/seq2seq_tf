@@ -69,9 +69,9 @@ def extrinsic_eval(logger,
     predict = []
     while True:
         try:
-            decode_result = model.model.decode(sess,
+            infer_result = model.model.infer(sess,
                 src_embedding, trg_embedding)
-            predict.extend(decode_result.sample_sentence)
+            predict.extend(infer_result.sample_sentence)
         except  tf.errors.OutOfRangeError:
             break
     
@@ -105,12 +105,12 @@ def decode_eval(logger,
         feed_dict={model.model.src_inputs_placeholder: src_sample_inputs,
             model.model.batch_size_placeholder: sample_size})
     
-    decode_result = model.model.decode(sess,
+    infer_result = model.model.infer(sess,
         src_embedding, trg_embedding)
-    if decode_result.summary is not None:
-        summary_writer.add_summary(decode_result.summary, global_step)
+    if infer_result.summary is not None:
+        summary_writer.add_summary(infer_result.summary, global_step)
     decode_eval_result = DecodeEvalLog(sample_input=src_sample_inputs,
-        sample_output=decode_result.sample_sentence, sample_reference=trg_sample_inputs)
+        sample_output=infer_result.sample_sentence, sample_reference=trg_sample_inputs)
     logger.update_decode_eval(decode_eval_result)
     logger.check_decode_eval()
 
@@ -161,7 +161,7 @@ def train(logger,
                 global_step = train_result.global_step
                 step_in_epoch += 1
                 train_logger.update(train_result, epoch, step_in_epoch, end_time-start_time)
-
+            
                 if step_in_epoch % hyperparams.train_step_per_stat == 0:
                     train_logger.check()
                     train_summary_writer.add_summary(train_result.summary, global_step)

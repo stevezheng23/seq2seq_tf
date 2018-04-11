@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from util.seq2seq_util import *
 
-__all__ = ["TrainResult", "EvaluateResult", "InferResult", "DecodeResult", "EncodeResult", "Seq2Seq"]
+__all__ = ["TrainResult", "EvaluateResult", "InferResult", "EncodeResult", "Seq2Seq"]
 
 class TrainResult(collections.namedtuple("TrainResult",
     ("loss", "learning_rate", "global_step", "batch_size", "summary"))):
@@ -16,10 +16,6 @@ class EvaluateResult(collections.namedtuple("EvaluateResult", ("loss", "batch_si
     pass
 
 class InferResult(collections.namedtuple("InferResult",
-    ("logits", "sample_id", "sample_word", "batch_size", "summary"))):
-    pass
-
-class DecodeResult(collections.namedtuple("DecodeResult",
     ("logits", "sample_id", "sample_word", "sample_sentence", "batch_size", "summary"))):
     pass
 
@@ -485,30 +481,15 @@ class Seq2Seq(object):
         else:
             logits, sample_id, sample_word, batch_size, summary = sess.run([self.infer_logits,
                 self.infer_sample_id, self.infer_sample_word, self.batch_size, self.infer_summary])
+                
+        if (self.hyperparams.model_decoder_decoding == "beam_search" and
+            self.hyperparams.model_decoder_beam_size > 0):
+            sample_id = sample_id[:,:,0]
+            sample_word = sample_word[:,:,0]
         
-        return InferResult(logits=logits, sample_id=sample_id,
-            sample_word=sample_word, batch_size=batch_size, summary=summary)
-    
-    def decode(self,
-               sess,
-               src_embedding,
-               trg_embedding):
-        """decode seq2seq model"""
-        infer_result = self.infer(sess, src_embedding, trg_embedding)
-        decoding = self.hyperparams.model_decoder_decoding
-        beam_size = self.hyperparams.model_decoder_beam_size
+        sample_sentence = [convert_decoding(sample.tolist(), self.hyperparams.data_eos) for sample in sample_word]
         
-        if decoding == "beam_search" and beam_size > 0:
-            logits, _, _, batch_size, summary = infer_result
-            sample_id = infer_result.sample_id[:,:,0]
-            sample_word = infer_result.sample_word[:,:,0]
-        else:
-            logits, sample_id, sample_word, batch_size, summary = infer_result
-        
-        trg_eos = self.hyperparams.data_eos
-        sample_sentence = [convert_decoding(sample.tolist(), trg_eos) for sample in sample_word]
-        
-        return DecodeResult(logits=logits, sample_id=sample_id, sample_word=sample_word,
+        return InferResult(logits=logits, sample_id=sample_id, sample_word=sample_word,
             sample_sentence=sample_sentence, batch_size=batch_size, summary=summary)
     
     def encode(self,

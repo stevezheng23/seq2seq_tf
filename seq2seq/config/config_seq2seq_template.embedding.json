@@ -18,6 +18,7 @@
     "data_log_output_dir": "output/log",
     "data_result_output_dir": "output/result",
     "train_random_seed": 100,
+    "train_enable_shuffle": true,
     "train_batch_size": 128,
     "train_eval_batch_size": 256,
     "train_eval_metric": "bleu",
