@@ -1,6 +1,6 @@
 {
-    "data_src_train_file": "data/cwmt.neu2017.english.chinese/NEU_cn.token.test.txt",
-    "data_trg_train_file": "data/cwmt.neu2017.english.chinese/NEU_en.token.test.txt",
+    "data_src_train_file": "data/cwmt.neu2017.english.chinese/NEU_cn.token.train.txt",
+    "data_trg_train_file": "data/cwmt.neu2017.english.chinese/NEU_en.token.train.txt",
     "data_src_eval_file": "data/cwmt.neu2017.english.chinese/NEU_cn.token.dev.txt",
     "data_trg_eval_file": "data/cwmt.neu2017.english.chinese/NEU_en.token.dev.txt",
     "data_src_vocab_file": "data/cwmt.neu2017.english.chinese/NEU_cn.vocab.txt",
