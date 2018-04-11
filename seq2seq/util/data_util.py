@@ -66,7 +66,8 @@ def create_seq2seq_pipeline(src_file,
                             eos,
                             pad,
                             batch_size,
-                            random_seed):
+                            random_seed,
+                            enable_shuffle):
     """create seq2seq data pipeline based on config"""
     src_pad_id = tf.cast(src_vocab_index.lookup(tf.constant(pad)), tf.int32)
     trg_pad_id = tf.cast(trg_vocab_index.lookup(tf.constant(pad)), tf.int32)
@@ -77,8 +78,9 @@ def create_seq2seq_pipeline(src_file,
     trg_dataset = tf.data.TextLineDataset([trg_file])
     dataset = tf.data.Dataset.zip((src_dataset, trg_dataset))
     
-    buffer_size = batch_size * 1000
-    dataset = dataset.shuffle(buffer_size, random_seed)
+    if enable_shuffle == True:
+        buffer_size = batch_size * 1000
+        dataset = dataset.shuffle(buffer_size, random_seed)
     
     dataset = dataset.map(lambda src, trg:
         (tf.string_split([src], delimiter=' ').values, tf.string_split([trg], delimiter=' ').values))
