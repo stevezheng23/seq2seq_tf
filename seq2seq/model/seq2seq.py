@@ -35,7 +35,6 @@ class Seq2Seq(object):
                  trg_vocab_index,
                  trg_vocab_inverted_index=None,
                  mode="train",
-                 pretrained_embedding=False,
                  scope="seq2seq"):
         """initialize seq2seq model"""
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
@@ -49,7 +48,6 @@ class Seq2Seq(object):
             self.trg_vocab_index = trg_vocab_index
             self.trg_vocab_inverted_index = trg_vocab_inverted_index
             self.mode = mode
-            self.pretrained_embedding = pretrained_embedding
             self.scope = scope
             
             self.num_gpus = self.hyperparams.device_num_gpus
@@ -199,12 +197,13 @@ class Seq2Seq(object):
         residual_connect = self.hyperparams.model_encoder_residual_connect
         forget_bias = self.hyperparams.model_encoder_forget_bias
         drop_out = self.hyperparams.model_encoder_dropout
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
         
         with tf.variable_scope("encoder", reuse=tf.AUTO_REUSE):
             """create embedding for encoder"""
             self.logger.log_print("# create embedding for encoder")
             embedding, embedding_placeholder = create_embedding(self.src_vocab_size,
-                embed_dim, self.pretrained_embedding)
+                embed_dim, pretrained_embedding)
             embedding_lookup = tf.nn.embedding_lookup(embedding, inputs)
             
             """create hidden layer for encoder"""
@@ -277,6 +276,7 @@ class Seq2Seq(object):
         decoding = self.hyperparams.model_decoder_decoding
         len_penalty_factor = self.hyperparams.model_decoder_len_penalty_factor
         beam_size = self.hyperparams.model_decoder_beam_size
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
         trg_sos_id = tf.cast(self.trg_vocab_index.lookup(tf.constant(self.hyperparams.data_sos)), tf.int32)
         trg_eos_id = tf.cast(self.trg_vocab_index.lookup(tf.constant(self.hyperparams.data_eos)), tf.int32)
         
@@ -284,7 +284,7 @@ class Seq2Seq(object):
             """create embedding for decoder"""
             self.logger.log_print("# create embedding for decoder")
             embedding, embedding_placeholder = create_embedding(self.trg_vocab_size,
-                embed_dim, self.pretrained_embedding)
+                embed_dim, pretrained_embedding)
             
             """create hidden layer for decoder"""
             self.logger.log_print("# create hidden layer for decoder")
@@ -438,7 +438,9 @@ class Seq2Seq(object):
               src_embedding,
               trg_embedding):
         """train seq2seq model"""
-        if self.pretrained_embedding == True:
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
+        
+        if pretrained_embedding == True:
             _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
                 self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary],
                 feed_dict={self.encoder_embedding_placeholder: src_embedding,
@@ -455,7 +457,9 @@ class Seq2Seq(object):
                  src_embedding,
                  trg_embedding):
         """evaluate seq2seq model"""
-        if self.pretrained_embedding == True:
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
+        
+        if pretrained_embedding == True:
             loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count],
                 feed_dict={self.encoder_embedding_placeholder: src_embedding,
                     self.decoder_embedding_placeholder: trg_embedding})
@@ -463,6 +467,18 @@ class Seq2Seq(object):
             loss, batch_size, word_count = sess.run([self.eval_loss, self.batch_size, self.word_count])
         
         return EvaluateResult(loss=loss, batch_size=batch_size, word_count=word_count)
+    
+    def _convert_decoding(self,
+                          decoding_list):
+        """convert decoding"""
+        eos = self.hyperparams.data_eos
+        eos = eos.encode("utf-8")
+        
+        if eos in decoding_list:
+            decoding_list = decoding_list[:decoding_list.index(eos)]
+        decoding = b" ".join(decoding_list)
+
+        return decoding
     
     def _get_infer_summary(self):
         """get infer summary"""
@@ -473,7 +489,9 @@ class Seq2Seq(object):
               src_embedding,
               trg_embedding):
         """infer seq2seq model"""
-        if self.pretrained_embedding == True:
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
+        
+        if pretrained_embedding == True:
             logits, sample_id, sample_word, batch_size, summary = sess.run([self.infer_logits,
                 self.infer_sample_id, self.infer_sample_word, self.batch_size, self.infer_summary],
                 feed_dict={self.encoder_embedding_placeholder: src_embedding,
@@ -487,7 +505,7 @@ class Seq2Seq(object):
             sample_id = sample_id[:,:,0]
             sample_word = sample_word[:,:,0]
         
-        sample_sentence = [convert_decoding(sample.tolist(), self.hyperparams.data_eos) for sample in sample_word]
+        sample_sentence = [self._convert_decoding(sample.tolist()) for sample in sample_word]
         
         return InferResult(logits=logits, sample_id=sample_id, sample_word=sample_word,
             sample_sentence=sample_sentence, batch_size=batch_size, summary=summary)
@@ -496,7 +514,9 @@ class Seq2Seq(object):
                sess,
                src_embedding):
         """encode seq2seq model"""
-        if self.pretrained_embedding == True:
+        pretrained_embedding = self.hyperparams.model_pretrained_embedding
+        
+        if pretrained_embedding == True:
             (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
                 batch_size) = sess.run([self.encoder_outputs, self.encoder_final_state, self.encoder_output_length,
                 self.encoder_embedding, self.batch_size], feed_dict={self.encoder_embedding_placeholder: src_embedding})

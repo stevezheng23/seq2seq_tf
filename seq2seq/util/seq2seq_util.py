@@ -3,15 +3,7 @@ import tensorflow as tf
 
 from util.default_util import *
 
-__all__ = ["convert_decoding", "create_embedding", "create_activation_function", "create_rnn_cell", "create_rnn_single_cell"]
-
-def convert_decoding(decoding_list, eos):
-    eos = eos.encode("utf-8")
-    if eos in decoding_list:
-        decoding_list = decoding_list[:decoding_list.index(eos)]
-    decoding = b" ".join(decoding_list)
-    
-    return decoding
+__all__ = ["create_embedding", "create_activation_function", "create_rnn_cell", "create_rnn_single_cell"]
 
 def create_embedding(vocab_size,
                      embedding_dim,
