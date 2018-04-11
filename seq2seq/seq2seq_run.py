@@ -161,7 +161,7 @@ def train(logger,
                 global_step = train_result.global_step
                 step_in_epoch += 1
                 train_logger.update(train_result, epoch, step_in_epoch, end_time-start_time)
-            
+                
                 if step_in_epoch % hyperparams.train_step_per_stat == 0:
                     train_logger.check()
                     train_summary_writer.add_summary(train_result.summary, global_step)

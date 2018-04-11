@@ -55,9 +55,8 @@ def create_train_model(logger,
         model = model_creator(logger=logger, hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=trg_vocab_size,
             src_vocab_index=src_vocab_index, trg_vocab_index=trg_vocab_index,
-            trg_vocab_inverted_index=trg_vocab_inverted_index, mode="train",
-            pretrained_embedding=hyperparams.model_pretrained_embedding,
-            scope=hyperparams.model_scope)
+            trg_vocab_inverted_index=trg_vocab_inverted_index,
+            mode="train", scope=hyperparams.model_scope)
         
         return TrainModel(graph=graph, model=model, data_pipeline=data_pipeline,
             src_embedding=src_embedding, trg_embedding=trg_embedding)
@@ -88,9 +87,8 @@ def create_eval_model(logger,
         model = model_creator(logger=logger, hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=trg_vocab_size,
             src_vocab_index=src_vocab_index, trg_vocab_index=trg_vocab_index,
-            trg_vocab_inverted_index=trg_vocab_inverted_index, mode="eval",
-            pretrained_embedding=hyperparams.model_pretrained_embedding,
-            scope=hyperparams.model_scope)
+            trg_vocab_inverted_index=trg_vocab_inverted_index,
+            mode="eval", scope=hyperparams.model_scope)
         
         return EvalModel(graph=graph, model=model, data_pipeline=data_pipeline,
             src_embedding=src_embedding, trg_embedding=trg_embedding)
@@ -112,16 +110,15 @@ def create_infer_model(logger,
             hyperparams.data_share_vocab, hyperparams.model_pretrained_embedding)
         
         logger.log_print("# create inference data pipeline")
-        data_pipeline = create_src_pipeline(src_vocab_index, hyperparams.data_src_max_length,
+        data_pipeline = create_seq2seq_infer_pipeline(src_vocab_index, hyperparams.data_src_max_length,
             hyperparams.data_src_reverse, hyperparams.data_pad)
         
         model_creator = get_model_creator(hyperparams.model_type)
         model = model_creator(logger=logger, hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=trg_vocab_size,
             src_vocab_index=src_vocab_index, trg_vocab_index=trg_vocab_index,
-            trg_vocab_inverted_index=trg_vocab_inverted_index, mode="infer",
-            pretrained_embedding=hyperparams.model_pretrained_embedding,
-            scope=hyperparams.model_scope)
+            trg_vocab_inverted_index=trg_vocab_inverted_index,
+            mode="infer", scope=hyperparams.model_scope)
         
         return InferModel(graph=graph, model=model,
             data_pipeline=data_pipeline, src_input=src_input, trg_input=trg_input,
@@ -141,16 +138,14 @@ def create_encode_model(logger,
             hyperparams.model_pretrained_embedding)
         
         logger.log_print("# create encoding data pipeline")
-        data_pipeline = create_src_pipeline(src_vocab_index, hyperparams.data_src_max_length,
+        data_pipeline = create_seq2seq_infer_pipeline(src_vocab_index, hyperparams.data_src_max_length,
             hyperparams.data_src_reverse, hyperparams.data_pad)
         
         model_creator = get_model_creator(hyperparams.model_type)
         model = model_creator(logger=logger, hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=None,
             src_vocab_index=src_vocab_index, trg_vocab_index=None,
-            trg_vocab_inverted_index=None, mode="encode",
-            pretrained_embedding=hyperparams.model_pretrained_embedding,
-            scope=hyperparams.model_scope)
+            trg_vocab_inverted_index=None, mode="encode", scope=hyperparams.model_scope)
         
         return EncodeModel(graph=graph, model=model, data_pipeline=data_pipeline,
             src_input=src_input, src_embedding=src_embedding)

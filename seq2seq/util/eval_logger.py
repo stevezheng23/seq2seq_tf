@@ -34,9 +34,9 @@ class EvalLogger(object):
         self.extrinsic_sample_size = 0
         
         """decoding evaluation result"""
-        self.sample_decode_input = None
-        self.sample_decode_output = None
-        self.sample_decode_reference = None
+        self.decode_sample_input = None
+        self.decode_sample_output = None
+        self.decode_sample_reference = None
         
         self.output_dir = output_dir
         if not tf.gfile.Exists(self.output_dir):
@@ -62,9 +62,9 @@ class EvalLogger(object):
     def update_decode_eval(self,
                            eval_result):
         """update evaluation logger based on decoding evaluation result"""
-        self.sample_decode_input = eval_result.sample_input
-        self.sample_decode_output = eval_result.sample_output
-        self.sample_decode_reference = eval_result.sample_reference
+        self.decode_sample_input = eval_result.sample_input
+        self.decode_sample_output = eval_result.sample_output
+        self.decode_sample_reference = eval_result.sample_reference
     
     def check_intrinsic_eval(self):
         """check intrinsic evaluation result"""       
@@ -92,17 +92,17 @@ class EvalLogger(object):
     
     def check_decode_eval(self):
         """check decoding evaluation result"""
-        input_size = len(self.sample_decode_input)
-        output_size = len(self.sample_decode_output)
-        reference_size = len(self.sample_decode_reference)
+        input_size = len(self.decode_sample_input)
+        output_size = len(self.decode_sample_output)
+        reference_size = len(self.decode_sample_reference)
         
         if input_size != output_size or input_size != reference_size:
             raise ValueError("size of decoding input, output and reference don't match")
         
         for i in range(input_size):
-            decode_input = self.sample_decode_input[i]
-            decode_output = self.sample_decode_output[i]
-            decode_reference = self.sample_decode_reference[i]
+            decode_input = self.decode_sample_input[i]
+            decode_output = self.decode_sample_output[i]
+            decode_reference = self.decode_sample_reference[i]
             log_line = "sample {0} - input: {1}".format(i+1, decode_input).encode('utf-8')
             self.log_writer.write("{0}\r\n".format(log_line))
             print(log_line)

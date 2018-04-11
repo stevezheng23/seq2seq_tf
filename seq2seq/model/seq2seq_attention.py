@@ -16,15 +16,13 @@ class Seq2SeqAttention(Seq2Seq):
                  trg_vocab_index,
                  trg_vocab_inverted_index=None,
                  mode="train",
-                 pretrained_embedding=False,
                  scope="seq2seq"):
         """sequence-to-sequence model with attention"""
         super(Seq2SeqAttention, self).__init__(logger=logger,
             hyperparams=hyperparams, data_pipeline=data_pipeline,
             src_vocab_size=src_vocab_size, trg_vocab_size=trg_vocab_size,
             src_vocab_index=src_vocab_index, trg_vocab_index=trg_vocab_index,
-            trg_vocab_inverted_index=trg_vocab_inverted_index,
-            mode=mode, pretrained_embedding=pretrained_embedding)
+            trg_vocab_inverted_index=trg_vocab_inverted_index, mode=mode, scope=scope)
         
         self.hyperparams = hyperparams
         self.mode = mode
