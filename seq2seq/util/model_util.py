@@ -82,7 +82,7 @@ def create_eval_model(logger,
         data_pipeline = create_seq2seq_pipeline(hyperparams.data_src_eval_file, hyperparams.data_trg_eval_file,
             src_vocab_index, trg_vocab_index, hyperparams.data_src_max_length, hyperparams.data_trg_max_length,
             hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad,
-            hyperparams.train_eval_batch_size, hyperparams.train_random_seed, hyperparams.train_enable_shuffle)
+            hyperparams.train_eval_batch_size, hyperparams.train_random_seed, False)
         
         model_creator = get_model_creator(hyperparams.model_type)
         model = model_creator(logger=logger, hyperparams=hyperparams, data_pipeline=data_pipeline,
