@@ -156,7 +156,7 @@ def get_model_creator(model_type):
     elif model_type == "attention":
         model_creator = Seq2SeqAttention
     else:
-        raise ValueError("can not create model with unsupported model type {0}".format(hyperparams.model_type))
+        raise ValueError("can not create model with unsupported model type {0}".format(model_type))
     
     return model_creator
 
