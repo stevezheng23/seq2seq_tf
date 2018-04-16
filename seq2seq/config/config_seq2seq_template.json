@@ -43,7 +43,7 @@
     "model_encoder_unit_dim": 512,
     "model_encoder_unit_type": "lstm",
     "model_encoder_dropout": 0.2,
-    "model_encoder_encoding": "summary",
+    "model_encoder_encoding": "context",
     "model_decoder_type": "uni",
     "model_decoder_embed_dim": 300,
     "model_decoder_num_layer": 2,
