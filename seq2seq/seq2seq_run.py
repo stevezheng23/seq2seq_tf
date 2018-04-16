@@ -267,7 +267,6 @@ def encode(logger,
             batch_size = encode_result.encoder_output_length.shape[0]
             batch_encoding = [(encode_result.encoder_output_length[i].tolist(),
                 encode_result.encoder_outputs[i,:encode_result.encoder_output_length[i],:].tolist(),
-                encode_result.encoder_final_state[-1,i,:].tolist(),
                 encode_result.encoder_embedding[i,:encode_result.encoder_output_length[i],:].tolist())
                 for i in range(batch_size)]
             encoding.extend(batch_encoding)
@@ -281,10 +280,8 @@ def encode(logger,
     encoding_vector = None
     if hyperparams.model_encoder_encoding == "context":
         encoding_vector = [encoding[i][1] for i in range(encoding_size)]
-    elif hyperparams.model_encoder_encoding == "summary":
-        encoding_vector = [encoding[i][2] for i in range(encoding_size)]
     elif hyperparams.model_encoder_encoding == "embedding":
-        encoding_vector = [encoding[i][3] for i in range(encoding_size)]
+        encoding_vector = [encoding[i][2] for i in range(encoding_size)]
     
     encoding = [{ "sample": encoding_sample[i], "max_length": encoding_length[i], 
         "encoding_type": hyperparams.model_encoder_encoding,
