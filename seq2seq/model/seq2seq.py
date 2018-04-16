@@ -73,7 +73,7 @@ class Seq2Seq(object):
                 (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
                     encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
                 self.encoder_outputs = encoder_outputs
-                self.encoder_final_state = tf.concat([encoder_final_state[0], encoder_final_state[1]], -1)
+                self.encoder_final_state = encoder_final_state
                 self.encoder_output_length = encoder_output_length
                 self.encoder_embedding = encoder_embedding
                 self.encoder_embedding_placeholder = encoder_embedding_placeholder
