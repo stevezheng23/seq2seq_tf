@@ -71,7 +71,7 @@ class Seq2Seq(object):
             if self.mode == "encode":               
                 self.logger.log_print("# build encoder for seq2seq model")
                 (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
-                    encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
+                    encoder_embedding_placeholder) = self._build_encoding_graph(src_inputs, src_input_length)
                 self.encoder_outputs = encoder_outputs
                 self.encoder_final_state = encoder_final_state
                 self.encoder_output_length = encoder_output_length
@@ -328,6 +328,18 @@ class Seq2Seq(object):
                 projections = outputs.rnn_output
             
             return projections, sample_id, final_state, embedding_lookup, embedding_placeholder
+    
+    def _build_encoding_graph(self,
+                              src_inputs,
+                              src_input_length):
+        """build encoding graph for seq2seq model"""
+        """encoder: encode source inputs to get encoder outputs"""
+        self.logger.log_print("# build encoder for seq2seq model")
+        (encoder_outputs, encoder_final_state, encoder_output_length, encoder_embedding,
+            encoder_embedding_placeholder) = self._build_encoder(src_inputs, src_input_length)
+        
+        return (encoder_outputs, encoder_final_state, encoder_output_length,
+            encoder_embedding, encoder_embedding_placeholder)
     
     def _build_graph(self,
                      src_inputs,
