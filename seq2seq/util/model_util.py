@@ -110,7 +110,7 @@ def create_infer_model(logger,
             hyperparams.data_share_vocab, hyperparams.model_pretrained_embedding)
         
         logger.log_print("# create inference data pipeline")
-        data_pipeline = create_seq2seq_infer_pipeline(src_vocab_index, hyperparams.data_src_max_length,
+        data_pipeline = create_seq2seq_src_pipeline(src_vocab_index, hyperparams.data_src_max_length,
             hyperparams.data_src_reverse, hyperparams.data_pad)
         
         model_creator = get_model_creator(hyperparams.model_type)
@@ -138,7 +138,7 @@ def create_encode_model(logger,
             hyperparams.model_pretrained_embedding)
         
         logger.log_print("# create encoding data pipeline")
-        data_pipeline = create_seq2seq_infer_pipeline(src_vocab_index, hyperparams.data_src_max_length,
+        data_pipeline = create_seq2seq_src_pipeline(src_vocab_index, hyperparams.data_src_max_length,
             hyperparams.data_src_reverse, hyperparams.data_pad)
         
         model_creator = get_model_creator(hyperparams.model_type)

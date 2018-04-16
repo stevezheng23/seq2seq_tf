@@ -5,7 +5,7 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
-__all__ = ["DataPipeline", "create_seq2seq_infer_pipeline", "create_seq2seq_pipeline",
+__all__ = ["DataPipeline", "create_seq2seq_src_pipeline", "create_seq2seq_pipeline",
            "load_pretrained_embedding", "create_embedding_file", "convert_embedding",
            "load_vocab_table", "create_vocab_table", "create_vocab_file",
            "load_input", "prepare_data", "prepare_seq2seq_data"]
@@ -17,11 +17,11 @@ class DataPipeline(collections.namedtuple("DataPipeline",
      "target_output_placeholder", "batch_size_placeholder"))):
     pass
 
-def create_seq2seq_infer_pipeline(src_vocab_index,
-                                  src_max_length,
-                                  src_reverse,
-                                  pad):
-    """create seq2seq infer data pipeline based on config"""
+def create_seq2seq_src_pipeline(src_vocab_index,
+                                src_max_length,
+                                src_reverse,
+                                pad):
+    """create seq2seq source data pipeline based on config"""
     src_pad_id = tf.cast(src_vocab_index.lookup(tf.constant(pad)), tf.int32)
     
     src_data_placeholder = tf.placeholder(shape=[None], dtype=tf.string)
