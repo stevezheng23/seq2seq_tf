@@ -110,13 +110,12 @@ class Seq2Seq(object):
                 self.logger.log_print("# setup learning rate decay mechanism")
                 self.global_step = tf.get_variable("global_step", shape=[], dtype=tf.int32,
                     initializer=tf.zeros_initializer, trainable=False)
-                self.learning_rate = tf.get_variable("learning_rate", dtype=tf.float32,
-                    initializer=tf.constant(self.hyperparams.train_optimizer_learning_rate), trainable=False)
-                decayed_learning_rate = self._apply_learning_rate_decay(self.learning_rate)
+                self.learning_rate = tf.constant(self.hyperparams.train_optimizer_learning_rate)
+                self.decayed_learning_rate = self._apply_learning_rate_decay(self.learning_rate)
                 
                 """initialize optimizer"""
                 self.logger.log_print("# initialize optimizer")
-                self.optimizer = self._initialize_optimizer(decayed_learning_rate)
+                self.optimizer = self._initialize_optimizer(self.decayed_learning_rate)
                 
                 """minimize optimization loss"""
                 self.logger.log_print("# setup loss minimization mechanism")
@@ -382,10 +381,12 @@ class Seq2Seq(object):
         
         if decay_mode == "exponential_decay":
             decayed_learning_rate = tf.train.exponential_decay(learning_rate=learning_rate,
-                global_step=(self.global_step - decay_start_step), decay_steps=decay_step, decay_rate=decay_rate)
+                global_step=(self.global_step - decay_start_step),
+                decay_steps=decay_step, decay_rate=decay_rate, staircase=True)
         elif decay_mode == "inverse_time_decay":
             decayed_learning_rate = tf.train.inverse_time_decay(learning_rate=learning_rate,
-                global_step=(self.global_step - decay_start_step), decay_steps=decay_step, decay_rate=decay_rate)
+                global_step=(self.global_step - decay_start_step),
+                decay_steps=decay_step, decay_rate=decay_rate, staircase=True)
         else:
             raise ValueError("unsupported decay mode {0}".format(decay_mode))
         
@@ -442,7 +443,7 @@ class Seq2Seq(object):
     
     def _get_train_summary(self):
         """get train summary"""
-        return tf.summary.merge([tf.summary.scalar("learning_rate", self.learning_rate),
+        return tf.summary.merge([tf.summary.scalar("learning_rate", self.decayed_learning_rate),
             tf.summary.scalar("train_loss", self.train_loss), tf.summary.scalar("gradient_norm", self.gradient_norm)])
     
     def train(self,
@@ -454,12 +455,12 @@ class Seq2Seq(object):
         
         if pretrained_embedding == True:
             _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
-                self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary],
+                self.train_loss, self.decayed_learning_rate, self.global_step, self.batch_size, self.train_summary],
                 feed_dict={self.encoder_embedding_placeholder: src_embedding,
                     self.decoder_embedding_placeholder: trg_embedding})
         else:
             _, loss, learning_rate, global_step, batch_size, summary = sess.run([self.update_model,
-                self.train_loss, self.learning_rate, self.global_step, self.batch_size, self.train_summary])
+                self.train_loss, self.decayed_learning_rate, self.global_step, self.batch_size, self.train_summary])
         
         return TrainResult(loss=loss, learning_rate=learning_rate,
             global_step=global_step, batch_size=batch_size, summary=summary)
