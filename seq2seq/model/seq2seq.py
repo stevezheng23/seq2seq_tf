@@ -195,7 +195,7 @@ class Seq2Seq(object):
         hidden_activation = self.hyperparams.model_encoder_hidden_activation
         residual_connect = self.hyperparams.model_encoder_residual_connect
         forget_bias = self.hyperparams.model_encoder_forget_bias
-        drop_out = self.hyperparams.model_encoder_dropout
+        drop_out = self.hyperparams.model_encoder_dropout if self.mode == "train" else 0.0
         pretrained_embedding = self.hyperparams.model_pretrained_embedding
         
         with tf.variable_scope("encoder", reuse=tf.AUTO_REUSE):
@@ -271,7 +271,7 @@ class Seq2Seq(object):
         projection_activation = create_activation_function(self.hyperparams.model_decoder_projection_activation)
         residual_connect = self.hyperparams.model_decoder_residual_connect
         forget_bias = self.hyperparams.model_decoder_forget_bias
-        drop_out = self.hyperparams.model_decoder_dropout
+        drop_out = self.hyperparams.model_decoder_dropout if self.mode == "train" else 0.0
         decoding = self.hyperparams.model_decoder_decoding
         len_penalty_factor = self.hyperparams.model_decoder_len_penalty_factor
         beam_size = self.hyperparams.model_decoder_beam_size
