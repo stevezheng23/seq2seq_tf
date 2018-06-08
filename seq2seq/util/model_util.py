@@ -34,7 +34,7 @@ def create_train_model(logger,
     graph = tf.Graph()
     with graph.as_default():
         logger.log_print("# prepare train data")
-        (_, _, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
+        (src_input_data, trg_input_data, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
             src_vocab_index, trg_vocab_index, _, trg_vocab_inverted_index) = prepare_seq2seq_data(logger,
             hyperparams.data_src_train_file, hyperparams.data_trg_train_file,
             hyperparams.data_src_vocab_file, hyperparams.data_trg_vocab_file,
@@ -48,7 +48,7 @@ def create_train_model(logger,
         logger.log_print("# create train data pipeline")
         data_pipeline = create_seq2seq_pipeline(hyperparams.data_src_train_file, hyperparams.data_trg_train_file,
             src_vocab_index, trg_vocab_index, hyperparams.data_src_max_length, hyperparams.data_trg_max_length,
-            hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad,
+            hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad, len(src_input_data),
             hyperparams.train_batch_size, hyperparams.train_random_seed, hyperparams.train_enable_shuffle)
         
         model_creator = get_model_creator(hyperparams.model_type)
@@ -66,7 +66,7 @@ def create_eval_model(logger,
     graph = tf.Graph()
     with graph.as_default():
         logger.log_print("# prepare evaluation data")
-        (_, _, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
+        (src_input_data, trg_input_data, src_embedding, trg_embedding, src_vocab_size, trg_vocab_size,
             src_vocab_index, trg_vocab_index, _, trg_vocab_inverted_index) = prepare_seq2seq_data(logger,
             hyperparams.data_src_eval_file, hyperparams.data_trg_eval_file,
             hyperparams.data_src_vocab_file, hyperparams.data_trg_vocab_file,
@@ -80,7 +80,7 @@ def create_eval_model(logger,
         logger.log_print("# create evaluation data pipeline")
         data_pipeline = create_seq2seq_pipeline(hyperparams.data_src_eval_file, hyperparams.data_trg_eval_file,
             src_vocab_index, trg_vocab_index, hyperparams.data_src_max_length, hyperparams.data_trg_max_length,
-            hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad,
+            hyperparams.data_src_reverse, hyperparams.data_sos, hyperparams.data_eos, hyperparams.data_pad, len(src_input_data),
             hyperparams.train_eval_batch_size, hyperparams.train_random_seed, False)
         
         model_creator = get_model_creator(hyperparams.model_type)
