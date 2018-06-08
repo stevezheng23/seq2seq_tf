@@ -65,6 +65,7 @@ def create_seq2seq_pipeline(src_file,
                             sos,
                             eos,
                             pad,
+                            data_size,
                             batch_size,
                             random_seed,
                             enable_shuffle):
@@ -79,7 +80,7 @@ def create_seq2seq_pipeline(src_file,
     dataset = tf.data.Dataset.zip((src_dataset, trg_dataset))
     
     if enable_shuffle == True:
-        buffer_size = batch_size * 100000
+        buffer_size = data_size
         dataset = dataset.shuffle(buffer_size, random_seed)
     
     dataset = dataset.map(lambda src, trg:
