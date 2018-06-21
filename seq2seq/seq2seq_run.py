@@ -144,6 +144,8 @@ def train(logger,
     init_model(eval_sess, eval_model)
     init_model(infer_sess, infer_model)
     
+    load_model(train_sess, train_model)
+    
     global_step = 0
     train_model.model.save(train_sess, global_step)
     train_logger = TrainLogger(hyperparams.data_log_output_dir)
