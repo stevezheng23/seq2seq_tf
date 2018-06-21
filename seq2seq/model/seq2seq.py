@@ -553,5 +553,3 @@ class Seq2Seq(object):
         ckpt_file = tf.train.latest_checkpoint(self.ckpt_dir)
         if ckpt_file is not None:
             self.ckpt_saver.restore(sess, ckpt_file)
-        else:
-            raise FileNotFoundError("latest checkpoint file doesn't exist")
