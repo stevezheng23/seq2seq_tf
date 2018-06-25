@@ -4,6 +4,7 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
+from util.default_util import *
 from util.seq2seq_util import *
 
 __all__ = ["TrainResult", "EvaluateResult", "InferResult", "EncodeResult", "Seq2Seq"]
@@ -138,10 +139,12 @@ class Seq2Seq(object):
                              activation,
                              forget_bias,
                              residual_connect,
-                             drop_out):
+                             drop_out,
+                             num_gpus,
+                             default_gpu_id):
         """create encoder cell"""
         cell = create_rnn_cell(num_layer, unit_dim, unit_type, activation,
-            forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+            forget_bias, residual_connect, drop_out, num_gpus, default_gpu_id)
         
         return cell
     
@@ -199,33 +202,35 @@ class Seq2Seq(object):
         pretrained_embedding = self.hyperparams.model_pretrained_embedding
         
         with tf.variable_scope("encoder", reuse=tf.AUTO_REUSE):
-            """create embedding for encoder"""
-            self.logger.log_print("# create embedding for encoder")
-            embedding, embedding_placeholder = create_embedding(self.src_vocab_size,
-                embed_dim, pretrained_embedding)
-            embedding_lookup = tf.nn.embedding_lookup(embedding, inputs)
+            with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE), tf.device(get_device_spec(0, 0)):
+                """create embedding for encoder"""
+                self.logger.log_print("# create embedding for encoder")
+                embedding, embedding_placeholder = create_embedding(self.src_vocab_size,
+                    embed_dim, pretrained_embedding)
+                embedding_lookup = tf.nn.embedding_lookup(embedding, inputs)
             
             """create hidden layer for encoder"""
-            self.logger.log_print("# create hidden layer for encoder")
-            if encoder_type == "uni":
-                cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
-                    forget_bias, residual_connect, drop_out)
-                outputs, final_state = tf.nn.dynamic_rnn(cell=cell, inputs=embedding_lookup,
-                    sequence_length=input_length, dtype=tf.float32)
-            elif encoder_type == "bi":
-                fwd_cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
-                    forget_bias, residual_connect, drop_out)
-                bwd_cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
-                    forget_bias, residual_connect, drop_out)
-                outputs, final_state = tf.nn.bidirectional_dynamic_rnn(cell_fw=fwd_cell, cell_bw=bwd_cell,
-                    inputs=embedding_lookup, sequence_length=input_length, dtype=tf.float32)
-            else:
-                raise ValueError("unsupported encoder type {0}".format(encoder_type))
-            
-            final_state = self._convert_encoder_state(final_state)
-            outputs, output_length = self._convert_encoder_outputs(outputs, input_length)
-            
-            return outputs, final_state, output_length, embedding_lookup, embedding_placeholder
+            with tf.variable_scope("sequence", reuse=tf.AUTO_REUSE):
+                self.logger.log_print("# create hidden layer for encoder")
+                if encoder_type == "uni":
+                    cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
+                        forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+                    outputs, final_state = tf.nn.dynamic_rnn(cell=cell, inputs=embedding_lookup,
+                        sequence_length=input_length, dtype=tf.float32)
+                elif encoder_type == "bi":
+                    fwd_cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
+                        forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+                    bwd_cell = self._create_encoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
+                        forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id + num_layer)
+                    outputs, final_state = tf.nn.bidirectional_dynamic_rnn(cell_fw=fwd_cell, cell_bw=bwd_cell,
+                        inputs=embedding_lookup, sequence_length=input_length, dtype=tf.float32)
+                else:
+                    raise ValueError("unsupported encoder type {0}".format(encoder_type))
+                
+                final_state = self._convert_encoder_state(final_state)
+                outputs, output_length = self._convert_encoder_outputs(outputs, input_length)
+        
+        return outputs, final_state, output_length, embedding_lookup, embedding_placeholder
         
     def _create_decoder_cell(self,
                              num_layer,
@@ -234,10 +239,12 @@ class Seq2Seq(object):
                              activation,
                              forget_bias,
                              residual_connect,
-                             drop_out):
+                             drop_out,
+                             num_gpus,
+                             default_gpu_id):
         """create decoder cell"""
         cell = create_rnn_cell(num_layer, unit_dim, unit_type, activation, 
-            forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+            forget_bias, residual_connect, drop_out, num_gpus, default_gpu_id)
         
         return cell
     
@@ -280,53 +287,55 @@ class Seq2Seq(object):
         trg_eos_id = tf.cast(self.trg_vocab_index.lookup(tf.constant(self.hyperparams.data_eos)), tf.int32)
         
         with tf.variable_scope("decoder", reuse=tf.AUTO_REUSE):
-            """create embedding for decoder"""
-            self.logger.log_print("# create embedding for decoder")
-            embedding, embedding_placeholder = create_embedding(self.trg_vocab_size,
-                embed_dim, pretrained_embedding)
+            with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE), tf.device(get_device_spec(0, 0)):
+                """create embedding for decoder"""
+                self.logger.log_print("# create embedding for decoder")
+                embedding, embedding_placeholder = create_embedding(self.trg_vocab_size,
+                    embed_dim, pretrained_embedding)
             
-            """create hidden layer for decoder"""
-            self.logger.log_print("# create hidden layer for decoder")
-            cell = self._create_decoder_cell(num_layer, unit_dim, unit_type,
-                hidden_activation, forget_bias, residual_connect, drop_out)
-            cell = self._convert_decoder_cell(cell, unit_dim, encoder_outputs, encoder_output_length)
-            init_state = self._convert_decoder_state(init_state, cell)
-            
-            """create projection layer for decoder"""
-            self.logger.log_print("# create projection layer for decoder")
-            projector = tf.layers.Dense(units=self.trg_vocab_size, activation=projection_activation)
-            
-            if self.mode == "infer":
-                embedding_lookup = None
-                max_len = tf.cast(tf.round(tf.cast(tf.reduce_max(encoder_output_length), tf.float32) *
-                    self.hyperparams.model_decoder_max_len_factor), tf.int32)
-                start_tokens = tf.fill([self.batch_size], trg_sos_id)
-                end_token = trg_eos_id
-                if decoding == "beam_search" and beam_size > 0:
-                    decoder = tf.contrib.seq2seq.BeamSearchDecoder(cell=cell, embedding=embedding,
-                        start_tokens=start_tokens, end_token=end_token, initial_state=init_state,
-                        beam_width=beam_size, output_layer=projector, length_penalty_weight=len_penalty_factor)
-                    outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations=max_len)
-                    sample_id = outputs.predicted_ids
-                    projections = tf.no_op()
+            with tf.variable_scope("sequence", reuse=tf.AUTO_REUSE):
+                """create hidden layer for decoder"""
+                self.logger.log_print("# create hidden layer for decoder")
+                cell = self._create_decoder_cell(num_layer, unit_dim, unit_type, hidden_activation,
+                    forget_bias, residual_connect, drop_out, self.num_gpus, self.default_gpu_id)
+                cell = self._convert_decoder_cell(cell, unit_dim, encoder_outputs, encoder_output_length)
+                init_state = self._convert_decoder_state(init_state, cell)
+                
+                """create projection layer for decoder"""
+                self.logger.log_print("# create projection layer for decoder")
+                projector = tf.layers.Dense(units=self.trg_vocab_size, activation=projection_activation)
+                
+                if self.mode == "infer":
+                    embedding_lookup = None
+                    max_len = tf.cast(tf.round(tf.cast(tf.reduce_max(encoder_output_length), tf.float32) *
+                        self.hyperparams.model_decoder_max_len_factor), tf.int32)
+                    start_tokens = tf.fill([self.batch_size], trg_sos_id)
+                    end_token = trg_eos_id
+                    if decoding == "beam_search" and beam_size > 0:
+                        decoder = tf.contrib.seq2seq.BeamSearchDecoder(cell=cell, embedding=embedding,
+                            start_tokens=start_tokens, end_token=end_token, initial_state=init_state,
+                            beam_width=beam_size, output_layer=projector, length_penalty_weight=len_penalty_factor)
+                        outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations=max_len)
+                        sample_id = outputs.predicted_ids
+                        projections = tf.no_op()
+                    else:
+                        helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(embedding=embedding,
+                            start_tokens=start_tokens, end_token=end_token)
+                        decoder = tf.contrib.seq2seq.BasicDecoder(cell=cell, helper=helper,
+                            initial_state=init_state, output_layer=projector)
+                        outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations=max_len)
+                        sample_id = outputs.sample_id
+                        projections = outputs.rnn_output
                 else:
-                    helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(embedding=embedding,
-                        start_tokens=start_tokens, end_token=end_token)
+                    embedding_lookup = tf.nn.embedding_lookup(embedding, inputs)
+                    helper = tf.contrib.seq2seq.TrainingHelper(inputs=embedding_lookup, sequence_length=input_length)
                     decoder = tf.contrib.seq2seq.BasicDecoder(cell=cell, helper=helper,
                         initial_state=init_state, output_layer=projector)
-                    outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, maximum_iterations=max_len)
+                    outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder)
                     sample_id = outputs.sample_id
                     projections = outputs.rnn_output
-            else:
-                embedding_lookup = tf.nn.embedding_lookup(embedding, inputs)
-                helper = tf.contrib.seq2seq.TrainingHelper(inputs=embedding_lookup, sequence_length=input_length)
-                decoder = tf.contrib.seq2seq.BasicDecoder(cell=cell, helper=helper,
-                    initial_state=init_state, output_layer=projector)
-                outputs, final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder)
-                sample_id = outputs.sample_id
-                projections = outputs.rnn_output
-            
-            return projections, sample_id, final_state, embedding_lookup, embedding_placeholder
+        
+        return projections, sample_id, final_state, embedding_lookup, embedding_placeholder
     
     def _build_encoding_graph(self,
                               src_inputs,
@@ -428,7 +437,10 @@ class Seq2Seq(object):
                        loss):
         """minimize optimization loss"""
         """compute gradients"""
-        grads_and_vars = self.optimizer.compute_gradients(loss)
+        if self.num_gpus > 1:
+            grads_and_vars = self.optimizer.compute_gradients(loss, colocate_gradients_with_ops=True)
+        else:
+            grads_and_vars = self.optimizer.compute_gradients(loss, colocate_gradients_with_ops=False)
         
         """clip gradients"""
         gradients = [x[0] for x in grads_and_vars]
