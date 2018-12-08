@@ -1,2 +1,2 @@
-# Seq2Seq
-Sequence-to-Sequence model in Tensorflow
+# Seq2Seq (Sequence-to-Sequence)
+Sequence-to-Sequence in Tensorflow
