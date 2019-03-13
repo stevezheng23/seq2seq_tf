@@ -47,8 +47,8 @@ def create_rnn_single_cell(unit_dim,
     activation_function = create_activation_function(activation)
     
     if unit_type == "lstm":
-        single_cell = tf.contrib.rnn.BasicLSTMCell(num_units=unit_dim,
-            activation=activation_function, forget_bias=forget_bias)
+        single_cell = tf.contrib.rnn.LSTMCell(num_units=unit_dim,
+            use_peepholes=False, activation=activation_function, forget_bias=forget_bias)
     elif unit_type == "peephole_lstm":
         single_cell = tf.contrib.rnn.LSTMCell(num_units=unit_dim,
             use_peepholes=True, activation=activation_function, forget_bias=forget_bias)
