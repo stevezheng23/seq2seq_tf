@@ -12,6 +12,7 @@ Sequence-to-Sequence (Seq2Seq) is a general end-to-end framework which maps sequ
 ## DataSet
 * [IWSLT'15 English-Vietnamese](https://nlp.stanford.edu/projects/nmt/data/iwslt15.en-vi/) is a small dataset for English-Vietnamese translation task, it contains 133K training pairs and top 50K frequent words are used as vocabularies.
 * [WMT'14 English-French](http://statmt.org/wmt14/translation-task.html) is large dataset for English-French translation task. The goals of this WMT shared translation task are, (1) to investigate the applicability of various MT techniques; (2) to examine special challenges in translating between English and French; (3) to create publicly available corpora for training and evaluating; (4) to generate up-to-date performance numbers as a basis of comparison in future research.
+* [fastText](https://fasttext.cc/docs/en/crawl-vectors.html) is open source library for efficient text classification and representation learning. Pre-trained word vectors for 157 languages are distributed by fastText. These  models were trained on Common Crawl and Wikipedia dataset using CBOW with position-weights, in dimension 300, with character n-grams of length 5, a window of size 5 and 10 negatives.
 * [GloVe](https://nlp.stanford.edu/projects/glove/) is an unsupervised learning algorithm for obtaining vector representations for words. Training is performed on aggregated global word-word co-occurrence statistics from a corpus, and the resulting representations showcase interesting linear substructures of the word vector space.
 
 ## Usage
