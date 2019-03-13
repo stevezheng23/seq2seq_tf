@@ -10,7 +10,7 @@ Sequence-to-Sequence (Seq2Seq) is a general end-to-end framework which maps sequ
 * NumPy 1.15.4
 
 ## DataSet
-* [IWSLT'15 English-Vietnamese](https://nlp.stanford.edu/projects/nmt/) is a small dataset for English-Vietnamese translation task, it contains 133K training pairs and top 50K frequent words are used as vocabularies.
+* [IWSLT'15 English-Vietnamese](https://nlp.stanford.edu/projects/nmt/data/iwslt15.en-vi/) is a small dataset for English-Vietnamese translation task, it contains 133K training pairs and top 50K frequent words are used as vocabularies.
 * [WMT'14 English-French](http://statmt.org/wmt14/translation-task.html) is large dataset for English-French translation task. The goals of this WMT shared translation task are, (1) to investigate the applicability of various MT techniques; (2) to examine special challenges in translating between English and French; (3) to create publicly available corpora for training and evaluating; (4) to generate up-to-date performance numbers as a basis of comparison in future research.
 * [GloVe](https://nlp.stanford.edu/projects/glove/) is an unsupervised learning algorithm for obtaining vector representations for words. Training is performed on aggregated global word-word co-occurrence statistics from a corpus, and the resulting representations showcase interesting linear substructures of the word vector space.
 
@@ -38,6 +38,15 @@ python hparam_search.py --base-config config/config_seq2seq_template.xxx.json --
 tensorboard --logdir=output
 ```
 
+## Experiment
+### Vanilla Seq2Seq
+<img src="/seq2seq/document/seq2seq.vanilla.architecture.jpg" width=500><br />
+*Figure 1: Vanilla Seq2Seq architecture*
+
+### Attention-based Seq2Seq
+<img src="/seq2seq/document/seq2seq.attention.architecture.jpg" width=500><br />
+*Figure 2: Attention-based Seq2Seq architecture*
+
 ## Reference
 * Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio. [Learning phrase representations using RNN encoder-decoder for statistical machine translation](https://arxiv.org/abs/1406.1078) [2014]
 * Ilya Sutskever, Oriol Vinyals, Quoc V. Le. [Sequence to sequence learning with neural networks](https://arxiv.org/abs/1409.3215) [2014]
@@ -45,3 +54,5 @@ tensorboard --logdir=output
 * Minh-Thang Luong, Hieu Pham, Christopher D. Manning. [Effective approaches to attention-based neural machine translation](https://arxiv.org/abs/1508.04025) [2015]
 * Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin. [Attention is all you need](https://arxiv.org/abs/1706.03762) [2017]
 * Luong, Minh-Thang and Manning, Christopher D. [Stanford neural machine translation systems for spoken language domains](https://nlp.stanford.edu/pubs/luong-manning-iwslt15.pdf) [2015]
+* Minh-Thang Luong. [Neural machine translation](https://github.com/lmthang/thesis) [2016]
+* Thang Luong, Eugene Brevdo, Rui Zhao. [Neural machine translation (seq2seq) tutorial](https://github.com/tensorflow/nmt)
