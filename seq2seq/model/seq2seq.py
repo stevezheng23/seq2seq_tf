@@ -130,7 +130,7 @@ class Seq2Seq(object):
                 tf.gfile.MakeDirs(self.hyperparams.train_ckpt_output_dir)
             self.ckpt_dir = self.hyperparams.train_ckpt_output_dir
             self.ckpt_name = os.path.join(self.ckpt_dir, "model_ckpt")
-            self.ckpt_saver = tf.train.Saver()
+            self.ckpt_saver = tf.train.Saver(max_to_keep=self.hyperparams.train_num_ckpt_to_keep)
     
     def _create_encoder_cell(self,
                              num_layer,

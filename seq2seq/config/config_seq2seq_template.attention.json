@@ -23,6 +23,7 @@
     "train_eval_batch_size": 256,
     "train_eval_metric": "bleu",
     "train_num_epoch": 20,
+    "train_num_ckpt_to_keep": 20,
     "train_ckpt_output_dir": "output/checkpoint",
     "train_summary_output_dir": "output/summary",
     "train_step_per_stat": 10,
