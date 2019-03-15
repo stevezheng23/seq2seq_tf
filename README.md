@@ -46,17 +46,17 @@ tensorboard --logdir=output
 
 |    IWSLT'15 EN-VI   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
-|         Dev         |     22.07     |     47.56     |
-|        Test         |     21.66     |     47.40     |
+|         Dev         |     21.90     |     10.28     |
+|        Test         |     22.36     |      9.79     |
 
-*Table 1: The performance of vanilla Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 50; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, beam size = 10*
+*Table 1: The performance of vanilla Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 300; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, beam size = 10*
 
 |    IWSLT'15 VI-EN   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
-|         Dev         |     25.69     |     38.75     |
-|        Test         |     28.19     |     37.27     |
+|         Dev         |     24.23     |      8.11     |
+|        Test         |     26.61     |      7.13     |
 
-*Table 2: The performance of vanilla Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 50; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, beam size = 10*
+*Table 2: The performance of vanilla Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 300; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, beam size = 10*
 
 ### Attention-based Seq2Seq
 <img src="/seq2seq/document/seq2seq.attention.architecture.jpg" width=500><br />
@@ -64,17 +64,17 @@ tensorboard --logdir=output
 
 |    IWSLT'15 EN-VI   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
-|         Dev         |     12.07     |     57.88     |
-|        Test         |     10.35     |     59.15     |
+|         Dev         |     11.48     |     22.55     |
+|        Test         |      9.86     |     25.11     |
 
-*Table 3: The performance of attention-based Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 50; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, att type = scaled multiplicative, beam size = 10*
+*Table 3: The performance of attention-based Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 300; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, att type = scaled multiplicative, beam size = 10*
 
 |    IWSLT'15 VI-EN   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
-|         Dev         |     13.36     |     50.46     |
-|        Test         |     12.25     |     51.08     |
+|         Dev         |     11.69     |     17.49     |
+|        Test         |     10.24     |     19.73     |
 
-*Table 4: The performance of attention-based Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 50; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, att type = scaled multiplicative, beam size = 10*
+*Table 4: The performance of attention-based Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512, max len = 300; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, max len = 50, att type = scaled multiplicative, beam size = 10*
 
 ## Reference
 * Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio. [Learning phrase representations using RNN encoder-decoder for statistical machine translation](https://arxiv.org/abs/1406.1078) [2014]
