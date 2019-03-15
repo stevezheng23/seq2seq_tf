@@ -10,8 +10,9 @@ def _bleu(pred_data, ref_data):
     """BLEU score for translation task"""
     max_order = 4
     smooth = False
-    ref_list_data = [[ref] for ref in ref_data]
-    score, _, _, _, _, _ = compute_bleu(ref_list_data, pred_data, max_order, smooth)
+    pred_data = [pred.strip().split(' ') for pred in pred_data]
+    ref_data = [[ref.strip().split(' ')] for ref in ref_data]
+    score, _, _, _, _, _ = compute_bleu(ref_data, pred_data, max_order, smooth)
     bleu_score = 100 * score
     return bleu_score
 
@@ -71,9 +72,9 @@ def _word_accuracy(pred_data, ref_data):
 
 def evaluate_from_data(pred_data, ref_data, metric):
     """compute evaluation score based on selected metric"""
-    pred_and_ref = [(pred, ref) for pred, ref in zip(pred_data, ref_data) if pred and ref]
+    pred_and_ref = [(pred.decode('utf-8'), ref) for pred, ref in zip(pred_data, ref_data) if pred and ref]
     pred_data = [pred for (pred, ref) in pred_and_ref]
-    ref_data = [ref.encode("utf-8") for (pred, ref) in pred_and_ref]
+    ref_data = [ref for (pred, ref) in pred_and_ref]
     
     if len(pred_data) == 0 or len(ref_data) == 0:
         return 0.0
@@ -101,5 +102,5 @@ def evaluate_from_file(pred_file, ref_file, metric):
         for line in file_r:
             reference.append(line.strip())
     
-    eval_score = evaluate(predict, reference, metric)
+    eval_score = evaluate_from_data(predict, reference, metric)
     return eval_score
