@@ -553,6 +553,24 @@ class Seq2Seq(object):
         return EncodeResult(encoder_outputs=encoder_outputs, encoder_final_state=encoder_final_state,
             encoder_output_length=encoder_output_length, encoder_embedding=encoder_embedding, batch_size=batch_size)
     
+    def get_latest_ckpt(self):
+        """get the latest checkpoint for seq2seq model"""
+        ckpt_file = tf.train.latest_checkpoint(self.ckpt_dir)
+        
+        if ckpt_file is None:
+            raise FileNotFoundError("latest checkpoint file doesn't exist")
+        
+        return ckpt_file
+    
+    def get_ckpt_list(self):
+        """get checkpoint list for seq2seq model"""
+        ckpt_state = tf.train.get_checkpoint_state(self.ckpt_dir)
+        
+        if ckpt_state is None:
+            raise FileNotFoundError("checkpoint files doesn't exist")
+        
+        return ckpt_state.all_model_checkpoint_paths
+    
     def save(self,
              sess,
              global_step):
@@ -560,8 +578,8 @@ class Seq2Seq(object):
         self.ckpt_saver.save(sess, self.ckpt_name, global_step=global_step)
     
     def restore(self,
-                sess):
+                sess,
+                ckpt_file):
         """restore seq2seq model from checkpoint"""
-        ckpt_file = tf.train.latest_checkpoint(self.ckpt_dir)
         if ckpt_file is not None:
             self.ckpt_saver.restore(sess, ckpt_file)

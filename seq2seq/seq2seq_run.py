@@ -23,10 +23,11 @@ def intrinsic_eval(logger,
                    summary_writer,
                    sess,
                    model,
+                   ckpt_file,
                    src_embedding,
                    trg_embedding,
                    global_step):
-    load_model(sess, model)
+    load_model(sess, model, ckpt_file)
     sess.run(model.data_pipeline.initializer)
     
     loss = 0.0
@@ -54,6 +55,7 @@ def extrinsic_eval(logger,
                    summary_writer,
                    sess,
                    model,
+                   ckpt_file,
                    src_input,
                    trg_input,
                    src_embedding,
@@ -61,7 +63,7 @@ def extrinsic_eval(logger,
                    batch_size,
                    metric,
                    global_step):
-    load_model(sess, model)
+    load_model(sess, model, ckpt_file)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_input,
             model.model.batch_size_placeholder: batch_size})
@@ -88,6 +90,7 @@ def decode_eval(logger,
                 summary_writer,
                 sess,
                 model,
+                ckpt_file,
                 src_input,
                 trg_input,
                 src_embedding,
@@ -100,7 +103,7 @@ def decode_eval(logger,
     src_sample_inputs = [src_input[sample_id] for sample_id in sample_ids]
     trg_sample_inputs = [trg_input[sample_id] for sample_id in sample_ids]
     
-    load_model(sess, model)
+    load_model(sess, model, ckpt_file)
     sess.run(model.data_pipeline.initializer,
         feed_dict={model.model.src_inputs_placeholder: src_sample_inputs,
             model.model.batch_size_placeholder: sample_size})
@@ -144,10 +147,7 @@ def train(logger,
     init_model(eval_sess, eval_model)
     init_model(infer_sess, infer_model)
     
-    load_model(train_sess, train_model)
-    
     global_step = 0
-    train_model.model.save(train_sess, global_step)
     train_logger = TrainLogger(hyperparams.data_log_output_dir)
     eval_logger = EvalLogger(hyperparams.data_log_output_dir)
     for epoch in range(hyperparams.train_num_epoch):
@@ -170,20 +170,23 @@ def train(logger,
                 if step_in_epoch % hyperparams.train_step_per_ckpt == 0:
                     train_model.model.save(train_sess, global_step)
                 if step_in_epoch % hyperparams.train_step_per_eval == 0:
+                    eval_ckpt_file = eval_model.model.get_latest_ckpt()
                     intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
-                        eval_model.src_embedding, eval_model.trg_embedding, global_step)
+                        eval_ckpt_file, eval_model.src_embedding, eval_model.trg_embedding, global_step)
             except tf.errors.OutOfRangeError:
                 train_logger.check()
                 train_model.model.save(train_sess, global_step)
+                eval_ckpt_file = eval_model.model.get_latest_ckpt()
                 intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
-                    eval_model.src_embedding, eval_model.trg_embedding, global_step)
+                    eval_ckpt_file, eval_model.src_embedding, eval_model.trg_embedding, global_step)
+                infer_ckpt_file = eval_model.model.get_latest_ckpt()
                 extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
-                    infer_model, infer_model.src_input, infer_model.trg_input,
+                    infer_model, infer_ckpt_file, infer_model.src_input, infer_model.trg_input,
                     infer_model.src_embedding, infer_model.trg_embedding,
                     hyperparams.train_eval_batch_size,
                     hyperparams.train_eval_metric, global_step)
                 decode_eval(eval_logger, infer_summary_writer, infer_sess,
-                    infer_model, infer_model.src_input, infer_model.trg_input,
+                    infer_model, infer_ckpt_file, infer_model.src_input, infer_model.trg_input,
                     infer_model.src_embedding, infer_model.trg_embedding,
                     hyperparams.train_decode_sample_size,
                     hyperparams.train_random_seed + global_step, global_step)
@@ -218,20 +221,23 @@ def evaluate(logger,
     
     init_model(eval_sess, eval_model)
     init_model(infer_sess, infer_model)
+    eval_ckpt_file_list = eval_model.model.get_ckpt_list()
+    infer_ckpt_file_list = infer_model.model.get_ckpt_list()
+    ckpt_file_list = zip(eval_ckpt_file_list, infer_ckpt_file_list)
     
-    global_step = 0
     eval_logger = EvalLogger(hyperparams.data_log_output_dir)
-    intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
-        eval_model.src_embedding, eval_model.trg_embedding, global_step)
-    extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
-        infer_model, infer_model.src_input, infer_model.trg_input,
-        infer_model.src_embedding, infer_model.trg_embedding,
-        hyperparams.train_eval_batch_size,
-        hyperparams.train_eval_metric, global_step)
-    decode_eval(eval_logger, infer_summary_writer, infer_sess,
-        infer_model, infer_model.src_input, infer_model.trg_input,
-        infer_model.src_embedding, infer_model.trg_embedding,
-        hyperparams.train_decode_sample_size, hyperparams.train_random_seed, global_step)
+    for i, (eval_ckpt_file, infer_ckpt_file) in enumerate(ckpt_file_list):
+        intrinsic_eval(eval_logger, eval_summary_writer, eval_sess, eval_model,
+            eval_ckpt_file, eval_model.src_embedding, eval_model.trg_embedding, i)
+        extrinsic_eval(eval_logger, infer_summary_writer, infer_sess,
+            infer_model, infer_ckpt_file, infer_model.src_input, infer_model.trg_input,
+            infer_model.src_embedding, infer_model.trg_embedding,
+            hyperparams.train_eval_batch_size,
+            hyperparams.train_eval_metric, i)
+        decode_eval(eval_logger, infer_summary_writer, infer_sess,
+            infer_model, infer_ckpt_file, infer_model.src_input, infer_model.trg_input,
+            infer_model.src_embedding, infer_model.trg_embedding,
+            hyperparams.train_decode_sample_size, hyperparams.train_random_seed, i)
     
     eval_summary_writer.close_writer()
     infer_summary_writer.close_writer()
@@ -257,7 +263,10 @@ def encode(logger,
     result_writer = ResultWriter(hyperparams.data_result_output_dir)
     
     init_model(encode_sess, encode_model)
-    load_model(encode_sess, encode_model)
+    
+    encode_ckpt_file = encode_model.model.get_latest_ckpt()
+    load_model(encode_sess, encode_model, encode_ckpt_file)
+    
     encode_sess.run(encode_model.data_pipeline.initializer,
         feed_dict={encode_model.model.src_inputs_placeholder: encode_model.src_input,
             encode_model.model.batch_size_placeholder: hyperparams.train_eval_batch_size})
