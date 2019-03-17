@@ -1,8 +1,8 @@
 # Sequence-to-Sequence (Seq2Seq)
 Sequence-to-Sequence (Seq2Seq) is a general end-to-end framework which maps sequences in source domain to sequences in target domain. Seq2Seq model first reads the source sequence using an encoder to build vector-based 'understanding' representations, then passes them through a decoder to generate a target sequence, so it's also referred to as the encoder-decoder architecture. Many NLP tasks have benefited from Seq2Seq framework, including machine translation, text summarization and question answering. Seq2Seq models vary in term of their exact architecture, multi-layer bi-directional RNN (e.g. LSTM, GRU, etc.) for encoder and multi-layer uni-directional RNN with autoregressive decoding (e.g. greedy, beam search, etc.) for decoder are natural choices for vanilla Seq2Seq model. Attention mechanism is later introduced to allow decoder to pay 'attention' to relevant encoder outputs directly, which brings significant improvement on top of already successful vanilla Se2Seq model. Furthermore, 'Transformer', a novel architecture based on self-attention mechanism is proposed and has outperformed both recurrent and convolutional models in various tasks, although out-of-scope for this repo, I'd like to refer interested readers to [this post](https://ai.googleblog.com/2017/08/transformer-novel-neural-network.html) for more details
 
-<img src="/seq2seq/document/seq2seq.abstract.architecture.png" width=500><br />
-*Figure 1: Encoder-Decoder architecture of Seq2Seq model*
+<p align="center"><img src="/seq2seq/document/seq2seq.abstract.architecture.png" width=500></p>
+<p align="center"><i>Figure 1: Encoder-Decoder architecture of Seq2Seq model</i></p>
 
 ## Setting
 * Python 3.6.6
@@ -41,40 +41,40 @@ tensorboard --logdir=output
 
 ## Experiment
 ### Vanilla Seq2Seq
-<img src="/seq2seq/document/seq2seq.vanilla.architecture.jpg" width=500><br />
-*Figure 1: Vanilla Seq2Seq architecture*
+<p align="center"><img src="/seq2seq/document/seq2seq.vanilla.architecture.jpg" width=500></p>
+<p align="center"><i>Figure 1: Vanilla Seq2Seq architecture</i></p>
 
 |    IWSLT'15 EN-VI   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
 |         Dev         |     25.09     |      9.47     |
 |        Test         |     25.87     |      9.35     |
 
-*Table 1: The performance of vanilla Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300*
+<p><i>Table 1: The performance of vanilla Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300</i></p>
 
 |    IWSLT'15 VI-EN   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
 |         Dev         |     29.52     |      8.49     |
 |        Test         |     33.16     |      7.88     |
 
-*Table 2: The performance of vanilla Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300*
+<p><i>Table 2: The performance of vanilla Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300</i></p>
 
 ### Attention-based Seq2Seq
-<img src="/seq2seq/document/seq2seq.attention.architecture.jpg" width=500><br />
-*Figure 2: Attention-based Seq2Seq architecture*
+<p align="center"><img src="/seq2seq/document/seq2seq.attention.architecture.jpg" width=500></p>
+<p align="center"><i>Figure 2: Attention-based Seq2Seq architecture</i></p>
 
 |    IWSLT'15 EN-VI   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
 |         Dev         |     12.56     |     22.41     |
 |        Test         |     10.79     |     25.23     |
 
-*Table 3: The performance of attention-based Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300, att type = scaled multiplicative*
+<p><i>Table 3: The performance of attention-based Seq2Seq model on IWSLT'15 English - Vietnamese task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300, att type = scaled multiplicative</i></p>
 
 |    IWSLT'15 VI-EN   |   Perplexity  |   BLEU Score  |
 |:-------------------:|:-------------:|:-------------:|
 |         Dev         |     11.83     |     19.37     |
 |        Test         |     10.42     |     21.40     |
 
-*Table 4: The performance of attention-based Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300, att type = scaled multiplicative*
+<p><i>Table 4: The performance of attention-based Seq2Seq model on IWSLT'15 Vietnamese - English task with setting: (1) for encoder, model type = Bi-LSTM, num layers = 1, unit dim = 512; (2) for decoder, model type = LSTM, num layers = 2, unit dim = 512, beam size = 10; (3) pre-trained embedding = false, max len = 300, att type = scaled multiplicative</i></p>
 
 ## Reference
 * Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio. [Learning phrase representations using RNN encoder-decoder for statistical machine translation](https://arxiv.org/abs/1406.1078) [2014]
